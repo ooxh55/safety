@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>안전 길드 상황판</title>
+<title>메이플키우기 - 안전 길드</title>
 <style>
 :root{
   --bg:#F5F3EE; --surface:#FFFFFF; --surface2:#EDEAE2; --ink:#22272E; --muted:#6E7681; --line:#E0DCD1;
@@ -128,7 +128,7 @@ footer{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid va
 <body>
 <div class="wrap">
 <header class="top">
-  <h1><span class="mark">안전</span> 길드 상황판</h1>
+  <h1>메이플키우기 - <span class="mark">안전</span> 길드</h1>
   <span class="sub">메이플키우기 · 전투력 <b>조</b> / 토벌·대항·보스 <b>억</b> / 수련장 <b>만</b> 단위</span>
 </header>
 <div class="statusrow">
@@ -158,7 +158,7 @@ footer{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid va
 </section>
 
 <section class="pane" id="pane-input" hidden>
-  <div class="hint">칸을 눌러 <b>직접 수정</b>하면 모두의 화면에 실시간 반영됩니다(빈 칸 = 미참여). 첫 수정 시 <b>수정 비밀코드</b>를 한 번 물어봅니다. <span style="color:var(--accent)">⟳ 주황색 칸(전투력·토벌 이번주)</span>은 mgf.gg에서 매시간 자동 갱신되는 값이에요. <b>엑셀 양식</b>을 내려받아 자동으로 못 채우는 점수(대항·보스·수련 등)를 입력해 업로드하면 전체가 교체되고, 양식 <b>맨 오른쪽에 「컨텐츠명_지난주」「컨텐츠명_이번주」 열을 추가하면 새 컨텐츠가 자동 생성</b>됩니다.</div>
+  <div class="hint">칸을 눌러 <b>직접 수정</b>하면 모두의 화면에 실시간 반영됩니다(빈 칸 = 미참여). 첫 수정 시 <b>수정 비밀코드</b>를 한 번 물어봅니다. <span style="color:var(--accent)">⟳ 주황색 칸(전투력·토벌 이번주)</span>은 mgf.gg에서 매시간 자동 갱신되는 값이에요. <b>엑셀 양식</b>에는 자동으로 못 채우는 점수(대항전·보스대전·수련장)만 있습니다 — 채워서 업로드하면 <b>그 열만 갱신되고 전투력·토벌전 등 나머지는 유지</b>돼요. 양식 <b>맨 오른쪽에 「컨텐츠명_지난주」「컨텐츠명_이번주」 열을 추가하면 새 컨텐츠가 자동 생성</b>됩니다.</div>
   <div class="btnrow">
     <button class="btn ghost" id="tmplBtn">📥 엑셀 양식 다운로드</button>
     <button class="btn" id="xlsxBtn">엑셀 업로드 (.xlsx)</button>
@@ -187,7 +187,7 @@ footer{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid va
   <div class="chips" id="chips"></div>
   <p class="meta" id="smeta"></p>
   <div class="tblbox"><table id="stable"></table></div>
-  <p class="legend">없는 길드는 검색 후 <b>실시간 조회</b> 버튼을 누르면 mgf.gg에서 바로 긁어옵니다. 쉼표(,)로 구분하면 <b>최대 5개 길드를 한 번에 비교</b>합니다. 이미 수집한 길드는 <b>↻ 갱신</b>으로 최신화할 수 있어요. 동명 길드가 여럿이면 상위 랭킹 길드가 조회될 수 있습니다.</p>
+  <p class="legend">없는 길드는 검색 후 <b>실시간 조회</b> 버튼을 누르면 mgf.gg에서 바로 긁어옵니다. 쉼표(,)로 구분하면 <b>최대 5개 길드를 한 번에 비교</b>합니다. 이미 수집한 길드는 <b>↻ 갱신</b>으로 최신화할 수 있어요. 목록에는 <b>안전(기본)과 방금 조회한 길드만</b> 표시됩니다 (이전 조회 기록은 캐시로만 유지). 동명 길드가 여럿이면 상위 랭킹 길드가 조회될 수 있습니다.</p>
 </section>
 
 <section class="pane" id="pane-history" hidden>
@@ -202,7 +202,7 @@ footer{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid va
 </section>
 
 <section class="pane" id="pane-calc" hidden>
-  <div class="hint">게임 <b>스탯 정보</b> 창의 수치를 그대로 넣으면 <b>표시 전투력</b>을 재현하고, 값을 바꿔보면 예상 전투력과 산출 근거가 즉시 갱신됩니다. 계산식은 넥슨 공식 전투 가이드의 가중치(25개 항)를 따르며, 실계정 2건으로 검증됐습니다(오차 1% 미만). 항목은 <b>그룹 안에서는 합산, 그룹끼리는 곱연산</b>으로 작동합니다. 입력값은 이 브라우저에만 저장됩니다.</div>
+  <div class="hint">게임 <b>스탯 정보</b> 창의 수치만 그대로 넣으면 됩니다. 스탯창에 안 보이는 숨은 요소(마스터리 등)는 <b>「게임에 표시된 전투력」을 한 번 입력해 보정</b>하면 자동 반영돼요 — 이후로는 값을 바꿀 때마다 예상 전투력과 산출 근거가 즉시 갱신됩니다. 계산식은 넥슨 공식 전투 가이드 가중치(25개 항) 기반이며 <b>그룹 안에서는 합산, 그룹끼리는 곱연산</b>입니다.</div>
   <div class="tiles">
     <div class="tile"><div class="lb">예상 전투력</div><div class="v" id="calcCP" style="font-size:24px">—</div><div class="d" id="calcCPraw"></div></div>
     <div class="tile"><div class="lb">기준 대비</div><div class="v" id="calcDelta">—</div><div class="d">아래 값 변경 시 즉시 반영 · <button class="btn ghost" id="calcSetBase" style="padding:1px 8px;font-size:11px">현재를 기준으로</button></div></div>
@@ -215,13 +215,20 @@ footer{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid va
     </select>
     <button class="btn ghost" id="calcZero">초기화 (모든 수치 0)</button>
   </div>
+  <div class="btnrow" style="align-items:center">
+    <span class="mut" style="font-size:13px">게임에 표시된 전투력:</span>
+    <input id="calGy" type="number" inputmode="numeric" placeholder="1" style="font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 10px;width:70px;text-align:right"><span class="mut">경</span>
+    <input id="calJo" type="number" inputmode="numeric" placeholder="8853" style="font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 10px;width:90px;text-align:right"><span class="mut">조</span>
+    <button class="btn ghost" id="calFit">이 값에 보정 맞추기</button>
+  </div>
   <p class="msg" id="calcMsg"></p>
+  <p class="msg" id="calcWarn"></p>
   <div id="calcInputs"></div>
   <div class="chart-card" style="margin-top:14px">
     <h3>산출 근거 — 그룹별 배율 (기본치 × 아래 배율 전부의 곱)</h3>
     <div class="tblbox" style="border:none"><table id="calcBreak" style="min-width:480px"></table></div>
   </div>
-  <p class="legend">스탯창에 없는 항목: <b>2차 스킬 레벨</b>과 <b>메인/서브 마스터리 습득 수</b>(동료 도감 마스터리)는 전투력에 크게 반영되지만 스탯 정보 창에는 안 보입니다 — 게임에서 확인해 채워 넣으면 오차가 거의 사라집니다. STR·DEX·INT·LUK, 경험치·메소 획득량, 디버프 내성, 크리티컬 저항, 초당 MP 회복은 <b>전투력 미반영</b> 스탯입니다.</p>
+  <p class="legend">STR·DEX·INT·LUK, 경험치·메소 획득량, 디버프 내성, 크리티컬 저항, 초당 MP 회복은 <b>전투력 미반영</b> 스탯이라 입력칸이 없습니다. 보정 계수는 동료 마스터리 등 스탯창 밖 요소를 흡수한 값이라, 마스터리를 새로 습득했을 때만 다시 보정하면 됩니다.</p>
 </section>
 
 <footer>증감·변동 표기: <span class="up">▲ 상승</span> · <span class="down">▼ 하락</span> · <span class="flat">–</span> 변화 없음/데이터 없음 · 순위합은 미참여 컨텐츠를 꼴찌(총원)로 계산 · 데이터 출처: 길드 명부(law_data), mgf.gg</footer>
@@ -507,7 +514,7 @@ function renderGrid(){
      + '<th>지난주</th><th class="auto" title="mgf.gg에서 매시간 자동 갱신">이번주 ⟳</th>'
      + '<th>지난주</th><th>이번주</th>'.repeat(3 + dyn.length) + '<th></th></tr></thead><tbody>';
   for(const r of [...members].sort((a,b)=>a.sort-b.sort)){
-    const num=(f,v,auto)=>`<td${auto?' class="autocell"':''}><input inputmode="decimal" data-id="${r.id}" data-f="${f}" value="${v==null?'':v}"${auto?' title="mgf.gg 자동 갱신 값 — 직접 수정해도 다음 동기화 때 덮어씌워집니다"':''}></td>`;
+    const num=(f,v,auto)=>`<td${auto?' class="autocell"':''}><input inputmode="decimal" data-id="${r.id}" data-f="${f}" value="${v==null?'':v}"${auto?' readonly title="mgf.gg에서 매시간 자동 갱신 — 직접 입력 불필요"':''}></td>`;
     const txt=(f,v)=>`<td><input class="wide" data-id="${r.id}" data-f="${f}" value="${esc(v)}"></td>`;
     h += `<tr data-row="${r.id}">${num('lv',r.lv)}${txt('job',r.job)}${txt('name',r.name)}${num('pw',r.pw,true)}`
        + num('tb0',r.tb[0])+num('tb1',r.tb[1],true)+num('dh0',r.dh[0])+num('dh1',r.dh[1])
@@ -576,22 +583,28 @@ $('addRowBtn').addEventListener('click', async ()=>{
 });
 
 /* 엑셀 업로드 / 붙여넣기 → 전체 교체 */
-const TMPL_FIXED = [['LEVEL','lv'],['직업','job'],['길드원','name'],['전투력(조)','pw'],
+/* 자동 조회되는 전투력·토벌전은 양식에서 제외 — 수동 입력 컨텐츠만 */
+const TMPL_ALL = [['LEVEL','lv'],['직업','job'],['길드원','name'],['전투력(조)','pw'],
   ['토벌전_지난주(억)','tb_prev'],['토벌전_이번주(억)','tb_cur'],['대항전_지난주(억)','dh_prev'],['대항전_이번주(억)','dh_cur'],
   ['보스대전_지난주(억)','bs_prev'],['보스대전_이번주(억)','bs_cur'],['수련장_지난주(만)','sr_prev'],['수련장_이번주(만)','sr_cur']];
+const TMPL_OUT = [['길드원','name'],
+  ['대항전_지난주(억)','dh_prev'],['대항전_이번주(억)','dh_cur'],
+  ['보스대전_지난주(억)','bs_prev'],['보스대전_이번주(억)','bs_cur'],
+  ['수련장_지난주(만)','sr_prev'],['수련장_이번주(만)','sr_cur']];
 function downloadTemplate(){
   if(typeof XLSX==='undefined'){ alert('엑셀 모듈 로드 실패 — 새로고침해 주세요.'); return; }
   const dyn = dynNames();
-  const header = [...TMPL_FIXED.map(x=>x[0]), ...dyn.flatMap(n=>[n+'_지난주', n+'_이번주'])];
-  const rows = [...members].sort((a,b)=>a.sort-b.sort).map(r=>[
-    r.lv, r.job, r.name, r.pw,
-    r.tb[0], r.tb[1], r.dh[0], r.dh[1], r.bs[0], r.bs[1], r.sr[0], r.sr[1],
+  const header = [...TMPL_OUT.map(x=>x[0]), ...dyn.flatMap(n=>[n+'_지난주', n+'_이번주'])];
+  const rows = [...members].sort((a,b)=>a.sort-b.sort).filter(r=>r.name).map(r=>[
+    r.name, r.dh[0], r.dh[1], r.bs[0], r.bs[1], r.sr[0], r.sr[1],
     ...dyn.flatMap(n=>{ const p=(r.extra||{})[n]||[null,null]; return [p[0],p[1]]; })
   ]);
-  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '점수입력');
-  XLSX.writeFile(wb, '길드_점수입력_양식.xlsx');
+  try{
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '점수입력');
+    XLSX.writeFile(wb, '길드_점수입력_양식.xlsx');
+  }catch(e){ alert('양식 생성에 실패했습니다: '+e); }
 }
 function parseAoa(aoa){
   let hr=-1, nc=-1;
@@ -607,7 +620,7 @@ function parseAoa(aoa){
   if(isTemplate){
     // 양식 모드: 헤더 이름으로 매핑 + 미지의 «이름_지난주/이번주» 쌍 → 동적 컨텐츠
     const col = {};
-    TMPL_FIXED.forEach(([hd,k])=>{ const i=head.findIndex(x=>x.replace(/\s/g,'')===hd.replace(/\s/g,'')); if(i>=0) col[k]=i; });
+    TMPL_ALL.forEach(([hd,k])=>{ const i=head.findIndex(x=>x.replace(/\s/g,'')===hd.replace(/\s/g,'')); if(i>=0) col[k]=i; });
     const known = new Set(Object.values(col));
     const dynCols = {};   // 이름 → [prevIdx, curIdx]
     head.forEach((hd,i)=>{
@@ -615,21 +628,20 @@ function parseAoa(aoa){
       let m = hd.match(/^(.+?)_지난주/); if(m){ (dynCols[m[1].trim()]=dynCols[m[1].trim()]||[null,null])[0]=i; return; }
       m = hd.match(/^(.+?)_이번주/); if(m){ (dynCols[m[1].trim()]=dynCols[m[1].trim()]||[null,null])[1]=i; }
     });
+    const provided = Object.keys(col).filter(k=>k!=='name');
     for(let i=hr+1;i<aoa.length;i++){
       const r=aoa[i]||[]; const name=col.name!=null?r[col.name]:null;
       if(name==null||String(name).trim()==='') continue;
       const g = k => col[k]!=null ? num(r[col[k]]) : null;
       const extra = {};
       for(const [nm,[pi,ci]] of Object.entries(dynCols)){
-        const pv = pi!=null?num(r[pi]):null, cv = ci!=null?num(r[ci]):null;
-        if(pv!=null||cv!=null) extra[nm]=[pv,cv]; else extra[nm]=[null,null];
+        extra[nm]=[pi!=null?num(r[pi]):null, ci!=null?num(r[ci]):null];
       }
-      rows.push({name:String(name).trim(), job:col.job!=null&&r[col.job]!=null?String(r[col.job]):null,
-        lv:g('lv'), pw:g('pw'), tb_prev:g('tb_prev'), tb_cur:g('tb_cur'),
-        dh_prev:g('dh_prev'), dh_cur:g('dh_cur'), bs_prev:g('bs_prev'), bs_cur:g('bs_cur'),
-        sr_prev:g('sr_prev'), sr_cur:g('sr_cur'), extra});
+      const row = {name:String(name).trim(), extra};
+      for(const k of provided) row[k] = (k==='job') ? (r[col.job]!=null?String(r[col.job]):null) : g(k);
+      rows.push(row);
     }
-    return rows;
+    return {mode:'template', rows, provided, dynProvided:Object.keys(dynCols)};
   }
   if(nc<2) return [];
   for(let i=hr+1;i<aoa.length;i++){          // 구 law_data 형식 (위치 기반)
@@ -640,17 +652,61 @@ function parseAoa(aoa){
       tb_prev:num(r[nc+2]), tb_cur:num(r[nc+3]), dh_prev:num(r[nc+4]), dh_cur:num(r[nc+5]),
       bs_prev:num(r[nc+6]), bs_cur:num(r[nc+7]), sr_prev:num(r[nc+8]), sr_cur:num(r[nc+9]), extra:{}});
   }
-  return rows;
+  return {mode:'legacy', rows};
 }
 
-async function replaceAll(rows, label){
+async function applyUpload(parsed, label){
   const msg = $('inputMsg');
-  if(!rows.length){ msg.className='msg err'; msg.textContent='읽을 수 있는 행이 없습니다.'; return; }
-  if(!confirm(`${rows.length}명으로 전체 명단을 교체합니다. 모두의 화면이 바뀝니다. 계속할까요?`)) return;
-  msg.className='msg'; msg.innerHTML='<span class="spin"></span>교체 중…';
-  const res = await rpc('replace_members', {p: rows});
-  if(res.error){ if(res.error!=='no_code'&&res.error!=='bad_code'){msg.className='msg err'; msg.textContent='실패: '+res.error;} else msg.textContent=''; return; }
-  msg.className='msg ok'; msg.textContent=`${label}에서 ${res.data}명 교체 완료.`;
+  if(!parsed || !parsed.rows || !parsed.rows.length){
+    msg.className='msg err';
+    msg.textContent='읽을 수 있는 행이 없습니다 — 헤더에 「길드원」 열이 있는지, 양식 파일이 맞는지 확인해 주세요.';
+    return;
+  }
+  const normN = s => String(s||'').trim().toLowerCase();
+  let payload, summary;
+  if(parsed.mode==='template'){
+    // 업로드된 열만 갱신 — 전투력·토벌전 등 나머지는 기존 값 유지
+    const byName = new Map();
+    const merged = members.map(r=>{
+      const c = {...r, tb:[...r.tb], dh:[...r.dh], bs:[...r.bs], sr:[...r.sr], extra:{...(r.extra||{})}};
+      if(c.name) byName.set(normN(c.name), c);
+      return c;
+    });
+    let matched=0; const added=[];
+    const F = {dh_prev:['dh',0],dh_cur:['dh',1],bs_prev:['bs',0],bs_cur:['bs',1],
+               sr_prev:['sr',0],sr_cur:['sr',1],tb_prev:['tb',0],tb_cur:['tb',1]};
+    for(const u of parsed.rows){
+      let r = byName.get(normN(u.name));
+      if(!r){
+        r = {id:crypto.randomUUID(), name:u.name, job:null, lv:null, pw:null,
+             tb:[null,null], dh:[null,null], bs:[null,null], sr:[null,null], extra:{},
+             sort:(Math.max(0,...merged.map(m=>m.sort||0))+1)};
+        merged.push(r); byName.set(normN(u.name), r); added.push(u.name);
+      } else matched++;
+      for(const k of parsed.provided){
+        if(F[k]) r[F[k][0]][F[k][1]] = u[k];
+        else if(k==='lv'||k==='pw') r[k] = u[k];
+        else if(k==='job') r.job = u.job;
+      }
+      for(const nm of parsed.dynProvided) r.extra[nm] = (u.extra||{})[nm] || [null,null];
+    }
+    const colNames = [...parsed.provided, ...parsed.dynProvided];
+    if(!confirm(`업로드한 열(${colNames.join(', ')})만 갱신합니다.\n기존 ${matched}명 갱신${added.length?` + 신규 ${added.length}명 추가 (${added.join(', ')})`:''}\n전투력·토벌전 등 나머지 값은 그대로 유지됩니다. 계속할까요?`)) return;
+    payload = merged.sort((a,b)=>(a.sort||0)-(b.sort||0)).map(toDbShape);
+    summary = `${label}: ${matched}명 갱신${added.length?`, ${added.length}명 추가`:''} (업로드한 열만 반영)`;
+  } else {
+    if(!confirm(`${parsed.rows.length}명으로 전체 명단을 교체합니다(law_data 형식). 모두의 화면이 바뀝니다. 계속할까요?`)) return;
+    payload = parsed.rows;
+    summary = `${label}: ${parsed.rows.length}명 전체 교체`;
+  }
+  msg.className='msg'; msg.innerHTML='<span class="spin"></span>반영 중…';
+  const res = await rpc('replace_members', {p: payload});
+  if(res.error){
+    if(res.error!=='no_code'&&res.error!=='bad_code'){ msg.className='msg err'; msg.textContent='업로드 실패: '+res.error+' — 4_update.sql 실행 여부를 확인해 주세요.'; }
+    else msg.textContent='';
+    return;
+  }
+  msg.className='msg ok'; msg.textContent=summary+' — 완료.';
   await loadMembers(); renderGrid();
 }
 $('tmplBtn').addEventListener('click', downloadTemplate);
@@ -665,9 +721,13 @@ $('xlsxFile').addEventListener('change', e=>{
     try{
       const wb = XLSX.read(fr.result,{type:'array'});
       const sh = wb.SheetNames.includes('점수입력')?'점수입력':(wb.SheetNames.includes('law_data')?'law_data':wb.SheetNames[0]);
-      replaceAll(parseAoa(XLSX.utils.sheet_to_json(wb.Sheets[sh],{header:1,defval:null})), `'${sh}' 시트`);
-    }catch(err){ const m=$('inputMsg'); m.className='msg err'; m.textContent='파일을 읽지 못했습니다.'; }
+      applyUpload(parseAoa(XLSX.utils.sheet_to_json(wb.Sheets[sh],{header:1,defval:null})), `'${sh}' 시트`);
+    }catch(err){
+      const m=$('inputMsg'); m.className='msg err';
+      m.textContent='파일을 읽지 못했습니다 — .xlsx 형식이 맞는지 확인해 주세요. ('+String(err).slice(0,80)+')';
+    }
   };
+  fr.onerror = ()=>{ const m=$('inputMsg'); m.className='msg err'; m.textContent='파일 읽기 오류가 발생했습니다.'; };
   fr.readAsArrayBuffer(f);
 });
 $('applyBtn').addEventListener('click', ()=>{
@@ -684,7 +744,7 @@ $('applyBtn').addEventListener('click', ()=>{
       tb_prev:num(c[4]), tb_cur:num(c[5]), dh_prev:num(c[6]), dh_cur:num(c[7]),
       bs_prev:num(c[8]), bs_cur:num(c[9]), sr_prev:num(c[10]), sr_cur:num(c[11])});
   }
-  replaceAll(rows, '붙여넣기');
+  applyUpload({mode:'legacy', rows}, '붙여넣기');
 });
 
 /* ══════════ 주간 마감 ══════════ */
@@ -697,11 +757,17 @@ $('rolloverBtn').addEventListener('click', async ()=>{
 });
 
 /* ══════════ 길드 검색 ══════════ */
+const sessionGuildIds = new Set([slugOf('안전')]);   // 칩 노출: 안전 + 이번에 조회한 길드만
 function renderSearch(){
   if(!guilds.length){ $('chips').innerHTML=''; $('smeta').textContent=''; $('stable').innerHTML=''; return; }
-  let g = guilds.find(x=>x.id===guildKey) || guilds.find(x=>x.id===slugOf('안전')) || guilds[0];
+  const visible = guilds.filter(x=>sessionGuildIds.has(x.id));
+  const pool = visible.length ? visible : guilds.filter(x=>x.id===slugOf('안전'));
+  let g = pool.find(x=>x.id===guildKey) || guilds.find(x=>x.id===slugOf('안전')) || pool[0] || guilds[0];
   guildKey = g.id;
-  $('chips').innerHTML = guilds.map(x=>
+  sessionGuildIds.add(g.id);
+  const chips = [g, ...pool.filter(x=>x.id!==g.id)].filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i)
+    .sort((a,b)=> (a.id===slugOf('안전')?-1:0) - (b.id===slugOf('안전')?-1:0));
+  $('chips').innerHTML = chips.map(x=>
     `<button data-g="${x.id}" class="${guildKey===x.id?'on':''}">${esc(x.label)}</button>`).join('');
   const rows = active();
   const myAvg = rows.reduce((s,r)=>s+(r.pw||0),0)/(rows.length||1);
@@ -727,6 +793,7 @@ async function liveFetch(name){
     if(data && data.ok){
       box.innerHTML = `<span class="okc">✔</span> ‘<b>${esc(data.guild.label)}</b>’ 조회 완료 (${(data.guild.rows||[]).length}명).`;
       await loadGuilds();
+      sessionGuildIds.add(data.guild.id);
       guildKey = data.guild.id;
       renderSearch();
       setTimeout(()=>{ box.hidden = true; }, 4000);
@@ -762,6 +829,7 @@ async function runCompare(names){
   }
   await loadGuilds();
   const ok = results.filter(r=>r.g);
+  for(const r of ok) if(r.g.id) sessionGuildIds.add(r.g.id);
   const fail = results.filter(r=>!r.g).map(r=>r.name);
   if(!ok.length){
     box.innerHTML = `<div class="hint">비교할 길드를 하나도 찾지 못했습니다 (${fail.map(esc).join(', ')}). 이름을 확인해 주세요.</div>`;
@@ -798,7 +866,7 @@ function doGuildSearch(){
   }
   const norm = normName;
   const hit = guilds.find(g => norm(g.label).includes(norm(q)));
-  if(hit){ guildKey = hit.id; box.hidden = true; renderSearch(); return; }
+  if(hit){ sessionGuildIds.add(hit.id); guildKey = hit.id; box.hidden = true; renderSearch(); return; }
   box.hidden = false;
   box.innerHTML = `‘<b>${esc(q)}</b>’ 길드는 아직 수집돼 있지 않습니다. `
     + `<button class="btn" id="liveBtn" style="padding:4px 12px;font-size:13px">⚡ mgf.gg에서 실시간 조회</button>`;
@@ -847,9 +915,10 @@ const CALC_GROUPS = [
   ['스킬 레벨', [['sk1','1차 스킬 레벨',8],['sk2','2차 스킬 레벨',0],['sk3','3차 스킬 레벨',60],['sk4','4차 스킬 레벨',87],['skAll','모든 스킬 레벨',46]]],
   ['지속시간 · 쿨타임', [['buffdur','버프 지속시간 %',32],['petdur','동료 소환 지속시간 %',28],['cdpct','쿨타임 감소 %',10],['cdsec','쿨타임 감소 (초)',0]]],
   ['생존', [['dtaken','받는 피해 감소 %',18.9]]],
-  ['마스터리 (스탯창에 없음 — 동료 도감에서 확인)', [['mainM','메인 마스터리 습득 수',16],['subM','서브 마스터리 습득 수',0]]],
 ];
+const DEFAULT_CALIB = 2.93137;   // 예시 스탯 기준: 표시 전투력 1경 8853조에 맞춘 보정
 const CALC_DEF = {}; CALC_GROUPS.forEach(([,fs])=>fs.forEach(([k,,d])=>CALC_DEF[k]=d));
+CALC_DEF._calib = DEFAULT_CALIB;
 let calc = {...CALC_DEF};
 try{ const s = JSON.parse(localStorage.getItem('cp-calc')||'null'); if(s) calc = {...CALC_DEF, ...s}; }catch(e){}
 let calcBase = null;
@@ -879,12 +948,8 @@ function cpFactors(v){
   push('스탯 비례 데미지', 1+P('statp')*700/1e6);
   push('최종 데미지', 1+P('fin')*700/1e6);
   push('데미지 증폭', 1+P('amp')*700/1e6);
-  let mMul=1, m=R('mainM');
-  for(const n of [5,6,9,9]){ const t=Math.max(0,Math.min(m,n)); m-=t; mMul*=1+t*80000/1e6; }
-  push('메인 마스터리', mMul);
-  let sMul=1, s=R('subM');
-  for(const n of [2,4,6,10]){ const t=Math.max(0,Math.min(s,n)); s-=t; sMul*=1+t*25000/1e6; }
-  push('서브 마스터리', sMul);
+  const calib = (v._calib && v._calib>0) ? v._calib : 1;
+  push('보정 계수 (스탯창에 없는 숨은 요소)', calib);
   return {base, factors:F, total: F.reduce((a,[,x])=>a*x, base)};
 }
 function fmtCP(x){
@@ -921,6 +986,11 @@ function updateCalc(){
   const d = b>0 ? (r.total/b-1)*100 : 0;
   $('calcDelta').innerHTML = Math.abs(d)<0.005 ? '<span class="flat">±0%</span>'
     : d>0 ? `<span class="up">▲ ${d.toFixed(2)}%</span>` : `<span class="down">▼ ${(-d).toFixed(2)}%</span>`;
+  const cb = (calc._calib && calc._calib>0) ? calc._calib : 1;
+  $('calcWarn').className = 'msg ' + (cb===1 ? 'err' : 'ok');
+  $('calcWarn').textContent = cb===1
+    ? '⚠ 보정이 안 된 상태입니다 — 게임 스탯창에 표시된 전투력을 위 칸(경/조)에 넣고 「이 값에 보정 맞추기」를 한 번 누르면, 스탯창에 안 보이는 숨은 요소(마스터리 등)가 자동 반영됩니다.'
+    : `보정 계수 ×${cb.toFixed(3)} 적용 중 — 스탯창 값만 바꿔도 예상 전투력이 표시 전투력 기준으로 계산됩니다. (동료 마스터리를 새로 얻으면 다시 보정하세요)`;
   const bf = cpFactors(calcBase);
   const bmap = Object.fromEntries(bf.factors);
   $('calcBreak').innerHTML =
@@ -939,6 +1009,18 @@ $('calcSetBase').addEventListener('click', ()=>{
   try{ localStorage.setItem('cp-calc-base', JSON.stringify(calcBase)); }catch(e){}
   updateCalc();
 });
+$('calFit').addEventListener('click', ()=>{
+  const gy = parseFloat($('calGy').value)||0, jo = parseFloat($('calJo').value)||0;
+  const target = gy*1e16 + jo*1e12;
+  const m = $('calcMsg');
+  if(!(target>0)){ m.className='msg err'; m.textContent='표시 전투력을 경/조 칸에 입력해 주세요 (예: 1경 8853조 → 1 / 8853).'; return; }
+  const raw = cpFactors({...calc, _calib:1}).total;
+  if(!(raw>0)){ m.className='msg err'; m.textContent='먼저 스탯 값을 입력해 주세요.'; return; }
+  calc._calib = target/raw;
+  try{ localStorage.setItem('cp-calc', JSON.stringify(calc)); }catch(e){}
+  updateCalc();
+  m.className='msg ok'; m.textContent=`보정 완료 — 이제 예상 전투력이 ${fmtCP(target)} 기준으로 계산됩니다.`;
+});
 function setCalcAll(vals){
   calc = {...vals};
   try{ localStorage.setItem('cp-calc', JSON.stringify(calc)); }catch(e){}
@@ -948,6 +1030,7 @@ function setCalcAll(vals){
 $('calcZero').addEventListener('click', ()=>{
   if(!confirm('모든 수치를 0으로 초기화할까요?')) return;
   const z = {}; Object.keys(CALC_DEF).forEach(k=>z[k]=0);
+  z._calib = 1;
   setCalcAll(z);
   const m=$('calcMsg'); m.className='msg ok'; m.textContent='모든 수치를 0으로 초기화했습니다.';
 });

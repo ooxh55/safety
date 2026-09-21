@@ -97,6 +97,9 @@ table.grid input:focus{outline:2px solid var(--accent);outline-offset:-2px;borde
 table.grid .del{appearance:none;border:none;background:none;color:var(--muted);cursor:pointer;font-size:15px;padding:2px 8px}
 table.grid .del:hover{color:var(--up)}
 tr.saving td{background:color-mix(in srgb,var(--accent-soft) 40%,transparent)}
+th.auto{color:var(--accent)}
+td.autocell{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
+td.autocell input{color:var(--accent);font-weight:700}
 .srchrow{display:flex;gap:8px;margin-bottom:8px}
 .srchrow input{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--surface);
   border:1px solid var(--line);border-radius:7px;padding:8px 12px}
@@ -155,8 +158,9 @@ footer{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid va
 </section>
 
 <section class="pane" id="pane-input" hidden>
-  <div class="hint">칸을 눌러 <b>직접 수정</b>하면 모두의 화면에 실시간 반영됩니다(빈 칸 = 미참여). 첫 수정 시 <b>수정 비밀코드</b>를 한 번 물어봅니다. <b>엑셀 업로드</b>는 길드 명부 파일(.xlsx)의 law_data 시트를 통째로 교체합니다.</div>
+  <div class="hint">칸을 눌러 <b>직접 수정</b>하면 모두의 화면에 실시간 반영됩니다(빈 칸 = 미참여). 첫 수정 시 <b>수정 비밀코드</b>를 한 번 물어봅니다. <span style="color:var(--accent)">⟳ 주황색 칸(전투력·토벌 이번주)</span>은 mgf.gg에서 매시간 자동 갱신되는 값이에요. <b>엑셀 양식</b>을 내려받아 자동으로 못 채우는 점수(대항·보스·수련 등)를 입력해 업로드하면 전체가 교체되고, 양식 <b>맨 오른쪽에 「컨텐츠명_지난주」「컨텐츠명_이번주」 열을 추가하면 새 컨텐츠가 자동 생성</b>됩니다.</div>
   <div class="btnrow">
+    <button class="btn ghost" id="tmplBtn">📥 엑셀 양식 다운로드</button>
     <button class="btn" id="xlsxBtn">엑셀 업로드 (.xlsx)</button>
     <input type="file" id="xlsxFile" accept=".xlsx,.xlsm" hidden aria-label="엑셀 파일 업로드">
     <button class="btn ghost" id="addRowBtn">＋ 길드원 추가</button>
@@ -203,9 +207,15 @@ footer{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid va
     <div class="tile"><div class="lb">예상 전투력</div><div class="v" id="calcCP" style="font-size:24px">—</div><div class="d" id="calcCPraw"></div></div>
     <div class="tile"><div class="lb">기준 대비</div><div class="v" id="calcDelta">—</div><div class="d">아래 값 변경 시 즉시 반영 · <button class="btn ghost" id="calcSetBase" style="padding:1px 8px;font-size:11px">현재를 기준으로</button></div></div>
   </div>
-  <div class="btnrow">
-    <button class="btn ghost" id="calcReset">예시값(재훈)으로 초기화</button>
+  <div class="btnrow" style="align-items:center">
+    <input id="presetName" placeholder="저장 이름 (예: 본캐)" style="font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 12px;width:170px" maxlength="20">
+    <button class="btn" id="presetSave">저장</button>
+    <select id="presetSel" style="font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 10px">
+      <option value="">저장된 값 불러오기…</option>
+    </select>
+    <button class="btn ghost" id="calcZero">초기화 (모든 수치 0)</button>
   </div>
+  <p class="msg" id="calcMsg"></p>
   <div id="calcInputs"></div>
   <div class="chart-card" style="margin-top:14px">
     <h3>산출 근거 — 그룹별 배율 (기본치 × 아래 배율 전부의 곱)</h3>
@@ -227,18 +237,29 @@ const SUPABASE_KEY = 'sb_publishable_bcZ4dmnQ7aMubs76eenGFQ_P3jXJ3Nr';
 const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 /* ══════════ 공통 ══════════ */
-const CONTENTS = [
+const FIXED_CONTENTS = [
   {key:'tb', label:'길드 토벌전', unit:'억', ink:'var(--tb)', bg:'var(--tb-soft)'},
   {key:'dh', label:'길드 대항전', unit:'억', ink:'var(--dh)', bg:'var(--dh-soft)'},
   {key:'bs', label:'길드 보스대전', unit:'억', ink:'var(--bs)', bg:'var(--bs-soft)'},
-  {key:'sr', label:'길드 수련장', unit:'만', ink:'var(--sr)', bg:'var(--sr-soft)'},
-  {key:'tot', label:'종합 분석', unit:'', ink:'var(--tot)', bg:'var(--tot-soft)'}
+  {key:'sr', label:'길드 수련장', unit:'만', ink:'var(--sr)', bg:'var(--sr-soft)'}
 ];
+const TOT_DEF = {key:'tot', label:'종합 분석', unit:'', ink:'var(--tot)', bg:'var(--tot-soft)'};
+function dynNames(){
+  const s = new Set();
+  for(const r of members) for(const k of Object.keys(r.extra||{})) s.add(k);
+  return [...s].sort((a,b)=>a.localeCompare(b,'ko'));
+}
+const scoreKeys = () => [...FIXED_CONTENTS.map(c=>c.key), ...dynNames().map(n=>'x:'+n)];
+function contentDefs(){   // 탭 순서: 종합 > 토벌 > 대항 > 보스 > 수련 > 추가 컨텐츠
+  return [TOT_DEF, ...FIXED_CONTENTS,
+    ...dynNames().map(n=>({key:'x:'+n, label:n, unit:'', ink:'var(--tot)', bg:'var(--tot-soft)'}))];
+}
+const getPair = (r,key) => key.startsWith('x:') ? ((r.extra||{})[key.slice(2)] || [null,null]) : r[key];
 let members = [];        // {id,name,job,lv,pw,tb:[p,c],dh,bs,sr,sort}
 let guilds = [];         // guilds 테이블 rows
 let history = [];        // {week_label, total_tb}
-let view = 'tb';
-let sortKey = 'pw', sortDir = -1;
+let view = 'tot';
+let sortKey = 'totRank', sortDir = 1;
 let guildKey = null;
 
 const $ = id => document.getElementById(id);
@@ -258,13 +279,15 @@ const active = () => members.filter(r => r.name && String(r.name).trim());
 /* ══════════ 계산 (엑셀과 동일) ══════════ */
 function compute(rows){
   const N = rows.length;
+  const KEYS = scoreKeys();
   const cols = {};
-  for(const c of ['tb','dh','bs','sr']) cols[c] = {prev: rows.map(r=>r[c][0]), cur: rows.map(r=>r[c][1])};
+  for(const c of KEYS) cols[c] = {prev: rows.map(r=>getPair(r,c)[0]), cur: rows.map(r=>getPair(r,c)[1])};
   const out = rows.map(r=>{
-    const m = {id:r.id, name:r.name, job:r.job, lv:r.lv, pw:r.pw};
+    const m = {id:r.id, name:r.name, job:r.job, lv:r.lv, pw:r.pw, nKeys:KEYS.length};
     let part = 0;
-    for(const c of ['tb','dh','bs','sr']){
-      const p = r[c][0], cur = r[c][1];
+    for(const c of KEYS){
+      const pair = getPair(r,c);
+      const p = pair[0], cur = pair[1];
       const rk = rankDesc(cols[c].cur, cur), prk = rankDesc(cols[c].prev, p);
       m[c] = {prev:p, cur, rank:rk,
         diff:(p!=null && cur!=null)?cur-p:null,
@@ -273,7 +296,7 @@ function compute(rows){
       if(cur!=null) part++;
     }
     m.part = part;
-    m.rankSum = part===0 ? null : ['tb','dh','bs','sr'].reduce((s,c)=>s+(m[c].rank==null?N:m[c].rank),0);
+    m.rankSum = part===0 ? null : KEYS.reduce((s,c)=>s+(m[c].rank==null?N:m[c].rank),0);
     m.eff = (m.tb.cur!=null && r.pw) ? m.tb.cur/r.pw : null;
     return m;
   });
@@ -301,15 +324,18 @@ function renderTiles(data){
     <div class="tile"><div class="lb">종합 1위</div><div class="v" style="font-size:18px">${esc(top)}</div><div class="d">컨텐츠 순위합 기준</div></div>`;
 }
 function renderSeg(){
-  $('seg').innerHTML = CONTENTS.map(c=>
+  $('seg').innerHTML = contentDefs().map(c=>
     `<button data-v="${c.key}" style="--seg-ink:${c.ink};--seg-bg:${c.bg}" class="${view===c.key?'on':''}">${c.label}${c.unit?`<span class="unit">(${c.unit})</span>`:''}</button>`).join('');
 }
 const CONTENT_COLS = [
   {k:'name',t:'길드원',txt:1},{k:'job',t:'직업',txt:1},{k:'lv',t:'LV'},{k:'pw',t:'전투력(조)'},
   {k:'prev',t:'지난주'},{k:'cur',t:'이번주'},{k:'diff',t:'증감'},{k:'pct',t:'증감률'},{k:'rank',t:'순위'},{k:'move',t:'변동'}];
 const TOT_COLS = [
-  {k:'name',t:'길드원',txt:1},{k:'totRank',t:'종합순위'},{k:'rankSum',t:'순위합'},{k:'ranks',t:'순위 토·대·보·수'},
+  {k:'name',t:'길드원',txt:1},{k:'totRank',t:'종합순위'},{k:'rankSum',t:'순위합'},{k:'ranks',t:'컨텐츠별 순위'},
   {k:'part',t:'참여'},{k:'pw',t:'전투력(조)'},{k:'pwRank',t:'전투력순위'},{k:'gap',t:'투력대비'},{k:'eff',t:'토벌÷투력'}];
+const totRanksHeader = () => scoreKeys().map(k=>keyShort(k)).join('·');
+const keyShort = k => k==='tb'?'토':k==='dh'?'대':k==='bs'?'보':k==='sr'?'수':k.slice(2,4);
+const keyLabel = k => k.startsWith('x:') ? k.slice(2) : (FIXED_CONTENTS.find(c=>c.key===k)||{}).label || k;
 const sortVal = (m,key)=> ['prev','cur','diff','pct','rank','move'].includes(key) ? m[view]?.[key] : m[key];
 
 function renderTable(data){
@@ -325,10 +351,10 @@ function renderTable(data){
     `<th class="${c.txt?'txt':''}" data-k="${c.k}">${c.t}${sortKey===c.k?`<span class="ar"> ${sortDir<0?'▼':'▲'}</span>`:''}</th>`).join('')+'</tr></thead>';
   const body = '<tbody>'+rows.map(m=>{
     if(view==='tot'){
-      const rks = ['tb','dh','bs','sr'].map(c=>m[c].rank==null?'–':m[c].rank).join(' · ');
+      const rks = scoreKeys().map(c=>m[c].rank==null?'–':m[c].rank).join(' · ');
       return `<tr><td class="txt name">${esc(m.name)}</td>`+
         `<td>${m.totRank==null?'<span class="flat">–</span>':`<span class="pill ${m.totRank<=3?'g':'n'}">${m.totRank}위</span>`}</td>`+
-        `<td>${m.rankSum==null?'<span class="flat">–</span>':fmt(m.rankSum)}</td><td class="mut">${rks}</td><td>${m.part}/4</td>`+
+        `<td>${m.rankSum==null?'<span class="flat">–</span>':fmt(m.rankSum)}</td><td class="mut" title="${scoreKeys().map(keyLabel).join(' · ')}">${rks}</td><td>${m.part}/${m.nKeys}</td>`+
         `<td class="mut">${fmt(m.pw)}</td><td class="mut">${m.pwRank??''}위</td><td>${arrow(m.gap,v=>v)}</td>`+
         `<td class="mut">${m.eff==null?'–':m.eff.toFixed(2)}</td></tr>`;
     }
@@ -341,7 +367,7 @@ function renderTable(data){
   }).join('')+'</tbody>';
   $('mtable').innerHTML = head+body;
   $('mlegend').innerHTML = view==='tot'
-    ? '<b>종합순위</b> = 4개 컨텐츠 등수의 합(순위합)이 낮은 순 — <b>전투력은 반영되지 않습니다</b> (미참여 컨텐츠는 꼴찌 처리) · 전투력·전투력순위·투력대비(전투력순위 − 종합순위)는 참고용 · <b>토벌÷투력</b> = 이번주 토벌전 점수 ÷ 전투력'
+    ? '<b>종합순위</b> = 전체 컨텐츠 등수의 합(순위합)이 낮은 순 — <b>전투력은 반영되지 않습니다</b> (미참여 컨텐츠는 꼴찌 처리) · 전투력·전투력순위·투력대비(전투력순위 − 종합순위)는 참고용 · <b>토벌÷투력</b> = 이번주 토벌전 점수 ÷ 전투력'
     : '<b>변동</b> = 지난주 순위 대비 몇 계단 이동했는지 (▲ 상승) · 열 머리글을 누르면 정렬됩니다';
 }
 function renderAll(){
@@ -432,10 +458,12 @@ const toModel = r => ({id:r.id, name:r.name, job:r.job, lv:r.lv, pw:r.pw==null?n
   dh:[r.dh_prev==null?null:+r.dh_prev, r.dh_cur==null?null:+r.dh_cur],
   bs:[r.bs_prev==null?null:+r.bs_prev, r.bs_cur==null?null:+r.bs_cur],
   sr:[r.sr_prev==null?null:+r.sr_prev, r.sr_cur==null?null:+r.sr_cur],
+  extra:(r.extra && typeof r.extra==='object')?r.extra:{},
   sort:r.sort_order??0, updated_at:r.updated_at});
 const toDbShape = r => ({id:r.id, name:r.name, job:r.job, lv:r.lv, pw:r.pw,
   tb_prev:r.tb[0], tb_cur:r.tb[1], dh_prev:r.dh[0], dh_cur:r.dh[1],
-  bs_prev:r.bs[0], bs_cur:r.bs[1], sr_prev:r.sr[0], sr_cur:r.sr[1], sort_order:r.sort});
+  bs_prev:r.bs[0], bs_cur:r.bs[1], sr_prev:r.sr[0], sr_cur:r.sr[1],
+  extra:r.extra||{}, sort_order:r.sort});
 
 async function loadMembers(){
   const {data, error} = await sb.from('members').select('*').order('sort_order').order('name');
@@ -470,17 +498,25 @@ const pending = new Map();   // id → timer
 const gridDirty = () => pending.size > 0;
 
 function renderGrid(){
+  const dyn = dynNames();
   let h = '<thead><tr><th class="txt" colspan="4" style="background:var(--tot-soft)">기본 정보</th>';
-  for(const c of CONTENTS.slice(0,4)) h += `<th colspan="2" style="background:${c.bg};color:${c.ink}">${c.label}(${c.unit})</th>`;
-  h += '<th style="background:var(--surface2)"></th></tr><tr><th>LV</th><th class="txt">직업</th><th class="txt">길드원</th><th>전투력(조)</th>'
-     + '<th>지난주</th><th>이번주</th>'.repeat(4) + '<th></th></tr></thead><tbody>';
+  for(const c of FIXED_CONTENTS) h += `<th colspan="2" style="background:${c.bg};color:${c.ink}">${c.label}(${c.unit})</th>`;
+  for(const n of dyn) h += `<th colspan="2" style="background:var(--tot-soft);color:var(--tot)">${esc(n)}</th>`;
+  h += '<th style="background:var(--surface2)"></th></tr><tr><th>LV</th><th class="txt">직업</th><th class="txt">길드원</th>'
+     + '<th class="auto" title="mgf.gg에서 매시간 자동 갱신">전투력(조) ⟳</th>'
+     + '<th>지난주</th><th class="auto" title="mgf.gg에서 매시간 자동 갱신">이번주 ⟳</th>'
+     + '<th>지난주</th><th>이번주</th>'.repeat(3 + dyn.length) + '<th></th></tr></thead><tbody>';
   for(const r of [...members].sort((a,b)=>a.sort-b.sort)){
-    const num=(f,v)=>`<td><input inputmode="decimal" data-id="${r.id}" data-f="${f}" value="${v==null?'':v}"></td>`;
+    const num=(f,v,auto)=>`<td${auto?' class="autocell"':''}><input inputmode="decimal" data-id="${r.id}" data-f="${f}" value="${v==null?'':v}"${auto?' title="mgf.gg 자동 갱신 값 — 직접 수정해도 다음 동기화 때 덮어씌워집니다"':''}></td>`;
     const txt=(f,v)=>`<td><input class="wide" data-id="${r.id}" data-f="${f}" value="${esc(v)}"></td>`;
-    h += `<tr data-row="${r.id}">${num('lv',r.lv)}${txt('job',r.job)}${txt('name',r.name)}${num('pw',r.pw)}`
-       + num('tb0',r.tb[0])+num('tb1',r.tb[1])+num('dh0',r.dh[0])+num('dh1',r.dh[1])
-       + num('bs0',r.bs[0])+num('bs1',r.bs[1])+num('sr0',r.sr[0])+num('sr1',r.sr[1])
-       + `<td><button class="del" data-id="${r.id}" aria-label="${esc(r.name)||'행'} 삭제" title="행 삭제">×</button></td></tr>`;
+    h += `<tr data-row="${r.id}">${num('lv',r.lv)}${txt('job',r.job)}${txt('name',r.name)}${num('pw',r.pw,true)}`
+       + num('tb0',r.tb[0])+num('tb1',r.tb[1],true)+num('dh0',r.dh[0])+num('dh1',r.dh[1])
+       + num('bs0',r.bs[0])+num('bs1',r.bs[1])+num('sr0',r.sr[0])+num('sr1',r.sr[1]);
+    for(const n of dyn){
+      const pair=(r.extra||{})[n]||[null,null];
+      h += num('x:'+n+':0',pair[0]) + num('x:'+n+':1',pair[1]);
+    }
+    h += `<td><button class="del" data-id="${r.id}" aria-label="${esc(r.name)||'행'} 삭제" title="행 삭제">×</button></td></tr>`;
   }
   $('gtable').innerHTML = h+'</tbody>';
 }
@@ -511,7 +547,15 @@ $('gtable').addEventListener('input', e=>{
   else{
     const n = raw==='' ? null : Number(raw.replace(/,/g,''));
     const v = (n==null||isNaN(n)) ? null : n;
-    if(FIELD[f]) r[FIELD[f][0]][FIELD[f][1]] = v; else r[f] = v;
+    if(f.startsWith('x:')){
+      const parts = f.split(':');           // x:이름:0|1
+      const nm = parts[1], idx = +parts[2];
+      r.extra = r.extra||{};
+      r.extra[nm] = r.extra[nm]||[null,null];
+      r.extra[nm][idx] = v;
+    }
+    else if(FIELD[f]) r[FIELD[f][0]][FIELD[f][1]] = v;
+    else r[f] = v;
   }
   flushRow(id);
 });
@@ -532,25 +576,73 @@ $('addRowBtn').addEventListener('click', async ()=>{
 });
 
 /* 엑셀 업로드 / 붙여넣기 → 전체 교체 */
+const TMPL_FIXED = [['LEVEL','lv'],['직업','job'],['길드원','name'],['전투력(조)','pw'],
+  ['토벌전_지난주(억)','tb_prev'],['토벌전_이번주(억)','tb_cur'],['대항전_지난주(억)','dh_prev'],['대항전_이번주(억)','dh_cur'],
+  ['보스대전_지난주(억)','bs_prev'],['보스대전_이번주(억)','bs_cur'],['수련장_지난주(만)','sr_prev'],['수련장_이번주(만)','sr_cur']];
+function downloadTemplate(){
+  if(typeof XLSX==='undefined'){ alert('엑셀 모듈 로드 실패 — 새로고침해 주세요.'); return; }
+  const dyn = dynNames();
+  const header = [...TMPL_FIXED.map(x=>x[0]), ...dyn.flatMap(n=>[n+'_지난주', n+'_이번주'])];
+  const rows = [...members].sort((a,b)=>a.sort-b.sort).map(r=>[
+    r.lv, r.job, r.name, r.pw,
+    r.tb[0], r.tb[1], r.dh[0], r.dh[1], r.bs[0], r.bs[1], r.sr[0], r.sr[1],
+    ...dyn.flatMap(n=>{ const p=(r.extra||{})[n]||[null,null]; return [p[0],p[1]]; })
+  ]);
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '점수입력');
+  XLSX.writeFile(wb, '길드_점수입력_양식.xlsx');
+}
 function parseAoa(aoa){
   let hr=-1, nc=-1;
   for(let i=0;i<Math.min(aoa.length,20);i++){
     const j=(aoa[i]||[]).findIndex(v=>typeof v==='string' && v.trim()==='길드원');
-    if(j>=2){ hr=i; nc=j; break; }
+    if(j>=0){ hr=i; nc=j; break; }
   }
   if(hr<0) return [];
   const num = v => (v==null||v==='')?null:(isNaN(Number(String(v).replace(/,/g,'')))?null:Number(String(v).replace(/,/g,'')));
+  const head = (aoa[hr]||[]).map(v=>v==null?'':String(v).trim());
+  const isTemplate = head.some(hd=>/_지난주|_이번주/.test(hd));
   const rows=[];
-  for(let i=hr+1;i<aoa.length;i++){
+  if(isTemplate){
+    // 양식 모드: 헤더 이름으로 매핑 + 미지의 «이름_지난주/이번주» 쌍 → 동적 컨텐츠
+    const col = {};
+    TMPL_FIXED.forEach(([hd,k])=>{ const i=head.findIndex(x=>x.replace(/\s/g,'')===hd.replace(/\s/g,'')); if(i>=0) col[k]=i; });
+    const known = new Set(Object.values(col));
+    const dynCols = {};   // 이름 → [prevIdx, curIdx]
+    head.forEach((hd,i)=>{
+      if(known.has(i)||!hd) return;
+      let m = hd.match(/^(.+?)_지난주/); if(m){ (dynCols[m[1].trim()]=dynCols[m[1].trim()]||[null,null])[0]=i; return; }
+      m = hd.match(/^(.+?)_이번주/); if(m){ (dynCols[m[1].trim()]=dynCols[m[1].trim()]||[null,null])[1]=i; }
+    });
+    for(let i=hr+1;i<aoa.length;i++){
+      const r=aoa[i]||[]; const name=col.name!=null?r[col.name]:null;
+      if(name==null||String(name).trim()==='') continue;
+      const g = k => col[k]!=null ? num(r[col[k]]) : null;
+      const extra = {};
+      for(const [nm,[pi,ci]] of Object.entries(dynCols)){
+        const pv = pi!=null?num(r[pi]):null, cv = ci!=null?num(r[ci]):null;
+        if(pv!=null||cv!=null) extra[nm]=[pv,cv]; else extra[nm]=[null,null];
+      }
+      rows.push({name:String(name).trim(), job:col.job!=null&&r[col.job]!=null?String(r[col.job]):null,
+        lv:g('lv'), pw:g('pw'), tb_prev:g('tb_prev'), tb_cur:g('tb_cur'),
+        dh_prev:g('dh_prev'), dh_cur:g('dh_cur'), bs_prev:g('bs_prev'), bs_cur:g('bs_cur'),
+        sr_prev:g('sr_prev'), sr_cur:g('sr_cur'), extra});
+    }
+    return rows;
+  }
+  if(nc<2) return [];
+  for(let i=hr+1;i<aoa.length;i++){          // 구 law_data 형식 (위치 기반)
     const r=aoa[i]||[]; const name=r[nc];
     if(name==null || String(name).trim()==='') continue;
     if(typeof name==='string' && /평균|합계|아이디/.test(name)) continue;
     rows.push({name:String(name).trim(), job:r[nc-1]==null?null:String(r[nc-1]), lv:num(r[nc-2]), pw:num(r[nc+1]),
       tb_prev:num(r[nc+2]), tb_cur:num(r[nc+3]), dh_prev:num(r[nc+4]), dh_cur:num(r[nc+5]),
-      bs_prev:num(r[nc+6]), bs_cur:num(r[nc+7]), sr_prev:num(r[nc+8]), sr_cur:num(r[nc+9])});
+      bs_prev:num(r[nc+6]), bs_cur:num(r[nc+7]), sr_prev:num(r[nc+8]), sr_cur:num(r[nc+9]), extra:{}});
   }
   return rows;
 }
+
 async function replaceAll(rows, label){
   const msg = $('inputMsg');
   if(!rows.length){ msg.className='msg err'; msg.textContent='읽을 수 있는 행이 없습니다.'; return; }
@@ -561,6 +653,7 @@ async function replaceAll(rows, label){
   msg.className='msg ok'; msg.textContent=`${label}에서 ${res.data}명 교체 완료.`;
   await loadMembers(); renderGrid();
 }
+$('tmplBtn').addEventListener('click', downloadTemplate);
 $('xlsxBtn').addEventListener('click', ()=>{
   if(typeof XLSX==='undefined'){ const m=$('inputMsg'); m.className='msg err'; m.textContent='엑셀 모듈 로드 실패 — 새로고침해 주세요.'; return; }
   $('xlsxFile').click();
@@ -571,7 +664,7 @@ $('xlsxFile').addEventListener('change', e=>{
   fr.onload = ()=>{
     try{
       const wb = XLSX.read(fr.result,{type:'array'});
-      const sh = wb.SheetNames.includes('law_data')?'law_data':wb.SheetNames[0];
+      const sh = wb.SheetNames.includes('점수입력')?'점수입력':(wb.SheetNames.includes('law_data')?'law_data':wb.SheetNames[0]);
       replaceAll(parseAoa(XLSX.utils.sheet_to_json(wb.Sheets[sh],{header:1,defval:null})), `'${sh}' 시트`);
     }catch(err){ const m=$('inputMsg'); m.className='msg err'; m.textContent='파일을 읽지 못했습니다.'; }
   };
@@ -726,7 +819,7 @@ $('tabs').addEventListener('click', e=>{
   if(b.dataset.pane==='input') renderGrid();
   if(b.dataset.pane==='search') renderSearch();
   if(b.dataset.pane==='history') renderHistoryPage();
-  if(b.dataset.pane==='calc') renderCalc();
+  if(b.dataset.pane==='calc'){ renderCalc(); loadPresets(); }
 });
 $('seg').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
@@ -846,12 +939,47 @@ $('calcSetBase').addEventListener('click', ()=>{
   try{ localStorage.setItem('cp-calc-base', JSON.stringify(calcBase)); }catch(e){}
   updateCalc();
 });
-$('calcReset').addEventListener('click', ()=>{
-  if(!confirm('입력값을 예시값으로 되돌릴까요?')) return;
-  calc = {...CALC_DEF};
+function setCalcAll(vals){
+  calc = {...vals};
   try{ localStorage.setItem('cp-calc', JSON.stringify(calc)); }catch(e){}
-  document.querySelectorAll('#calcInputs input').forEach(i=>{ i.value = calc[i.dataset.k]; });
+  document.querySelectorAll('#calcInputs input').forEach(i=>{ i.value = calc[i.dataset.k] ?? 0; });
   updateCalc();
+}
+$('calcZero').addEventListener('click', ()=>{
+  if(!confirm('모든 수치를 0으로 초기화할까요?')) return;
+  const z = {}; Object.keys(CALC_DEF).forEach(k=>z[k]=0);
+  setCalcAll(z);
+  const m=$('calcMsg'); m.className='msg ok'; m.textContent='모든 수치를 0으로 초기화했습니다.';
+});
+async function loadPresets(keep){
+  if(!sb) return;
+  const {data} = await sb.from('calc_presets').select('name').order('name');
+  const sel = $('presetSel');
+  const cur = keep ?? sel.value;
+  sel.innerHTML = '<option value="">저장된 값 불러오기…</option>' +
+    (data||[]).map(p=>`<option value="${esc(p.name)}">${esc(p.name)}</option>`).join('');
+  if(cur && [...sel.options].some(o=>o.value===cur)) sel.value = cur;
+}
+$('presetSave').addEventListener('click', async ()=>{
+  const name = $('presetName').value.trim();
+  const m = $('calcMsg');
+  if(!name){ m.className='msg err'; m.textContent='저장 이름을 입력해 주세요.'; return; }
+  const res = await rpc('save_calc_preset', {p_name: name, p_data: calc});
+  if(res.error){
+    if(res.error!=='no_code'&&res.error!=='bad_code'){ m.className='msg err'; m.textContent='저장 실패: '+res.error+' (4_update.sql 실행 여부를 확인하세요)'; }
+    return;
+  }
+  m.className='msg ok'; m.textContent=`‘${name}’ 이름으로 저장했습니다 (같은 이름은 덮어쓰기).`;
+  await loadPresets(name);
+});
+$('presetSel').addEventListener('change', async e=>{
+  const name = e.target.value; if(!name) return;
+  const {data, error} = await sb.from('calc_presets').select('data').eq('name', name).single();
+  const m = $('calcMsg');
+  if(error || !data){ m.className='msg err'; m.textContent='불러오기 실패'; return; }
+  setCalcAll({...Object.fromEntries(Object.keys(CALC_DEF).map(k=>[k,0])), ...data.data});
+  $('presetName').value = name;
+  m.className='msg ok'; m.textContent=`‘${name}’ 값을 불러왔습니다.`;
 });
 
 /* ══════════ 실시간 · 접속자 ══════════ */

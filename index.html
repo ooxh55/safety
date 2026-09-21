@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>안전 길드 상황판</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#F5F3EE; --surface:#FFFFFF; --surface2:#EDEAE2; --ink:#22272E; --muted:#6E7681; --line:#E0DCD1;
+  --accent:#C75B1F; --accent-soft:#F7E8DD;
+  --up:#C2403A; --down:#2E6BBF; --flat:#9AA1AA; --ok:#3E8E5A;
+  --tb:#C75B1F; --dh:#3E8E5A; --bs:#7A5BA8; --sr:#3878B8; --tot:#5B6472;
+  --tb-soft:#F8E9DE; --dh-soft:#E6F1E8; --bs-soft:#EEE9F5; --sr-soft:#E4EEF7; --tot-soft:#E9EBEE;
+  --gold:#B98A1C; --gold-soft:#F6EDD6;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15181D; --surface:#1E232B; --surface2:#262C36; --ink:#E9E7E2; --muted:#98A0AA; --line:#333A45;
+    --accent:#E8834A; --accent-soft:#3A2A1E;
+    --up:#E06A62; --down:#6FA3E8; --flat:#6E7681; --ok:#6BBD8A;
+    --tb:#E8834A; --dh:#6BBD8A; --bs:#A98BD6; --sr:#6FA6DC; --tot:#9AA3B0;
+    --tb-soft:#33251B; --dh-soft:#1E2E24; --bs-soft:#2A2433; --sr-soft:#1E2933; --tot-soft:#272C33;
+    --gold:#D9A83C; --gold-soft:#332B18;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);
+  font-family:'IBM Plex Sans KR',-apple-system,'Malgun Gothic',sans-serif;font-size:14px;line-height:1.5;
+  padding-inline:16px;padding-block:0 40px}
+.wrap{max-width:1080px;margin:0 auto}
+header.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;padding-block:26px 6px}
+h1{font-family:'Black Han Sans','IBM Plex Sans KR',sans-serif;font-weight:400;font-size:30px;margin:0;letter-spacing:.5px}
+h1 .mark{color:var(--accent)}
+.top .sub{color:var(--muted);font-size:13px}
+.statusrow{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12px;color:var(--muted)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--flat);margin-right:4px;vertical-align:baseline}
+.dot.on{background:var(--ok)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-block:14px 18px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.tile .lb{font-size:11px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.tile .v small{font-size:12px;font-weight:500;color:var(--muted);margin-left:2px}
+.tile .d{font-size:12px;margin-top:2px;color:var(--muted)}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5;padding-top:4px}
+.tabs button{appearance:none;border:none;background:none;color:var(--muted);font:inherit;font-weight:500;
+  padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:700}
+.tabs button:focus-visible,.seg button:focus-visible,.chips button:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+section.pane{padding-top:16px}
+.rowbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{appearance:none;font:inherit;font-size:13px;font-weight:500;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 13px}
+.seg button.on{color:var(--seg-ink,var(--ink));background:var(--seg-bg,var(--surface2));border-color:var(--seg-ink,var(--line));font-weight:700}
+.seg .unit{font-weight:400;opacity:.7;margin-left:2px}
+.tblbox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line);font-size:13px}
+th{font-size:12px;color:var(--muted);font-weight:500;background:var(--surface2);position:sticky;top:0;cursor:pointer;user-select:none}
+th.txt,td.txt{text-align:left}
+th .ar{font-size:10px;color:var(--accent)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:color-mix(in srgb,var(--surface2) 55%,transparent)}
+td.name{font-weight:700}
+td.mut,span.mut{color:var(--muted)}
+.up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--flat)} .okc{color:var(--ok)}
+.pill{display:inline-block;min-width:26px;text-align:center;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700}
+.pill.g{background:var(--gold-soft);color:var(--gold)}
+.pill.n{background:var(--surface2);color:var(--muted);font-weight:500}
+.legend{color:var(--muted);font-size:12px;margin-top:10px}
+.legend b{color:var(--ink)}
+textarea{width:100%;min-height:200px;font:12px/1.6 ui-monospace,Consolas,monospace;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;resize:vertical}
+.btn{appearance:none;font:inherit;font-weight:700;cursor:pointer;border-radius:7px;padding:8px 16px;
+  border:1px solid var(--accent);background:var(--accent);color:#fff}
+.btn.ghost{background:none;color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:default}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-block:10px}
+.msg{font-size:13px;margin-top:6px}
+.msg.ok{color:var(--ok)} .msg.err{color:var(--up)}
+.hint{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:6px;
+  padding:10px 14px;font-size:13px;color:var(--muted);margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chips button{appearance:none;font:inherit;font-size:13px;cursor:pointer;border:1px solid var(--line);
+  background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 14px}
+.chips button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-weight:700}
+.meta{font-size:12px;color:var(--muted);margin-bottom:10px}
+.meta a{color:var(--accent)}
+table.grid{min-width:960px}
+table.grid td{padding:0;border-right:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
+table.grid td:last-child{border-right:none;text-align:center}
+table.grid input{width:78px;border:none;background:none;color:inherit;font:inherit;font-size:13px;
+  text-align:right;padding:6px 8px;font-variant-numeric:tabular-nums}
+table.grid input.wide{width:112px;text-align:left}
+table.grid input:focus{outline:2px solid var(--accent);outline-offset:-2px;border-radius:3px;background:var(--accent-soft)}
+table.grid .del{appearance:none;border:none;background:none;color:var(--muted);cursor:pointer;font-size:15px;padding:2px 8px}
+table.grid .del:hover{color:var(--up)}
+tr.saving td{background:color-mix(in srgb,var(--accent-soft) 40%,transparent)}
+.srchrow{display:flex;gap:8px;margin-bottom:8px}
+.srchrow input{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line);border-radius:7px;padding:8px 12px}
+.srchrow input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+details.paste{margin-top:14px;color:var(--muted)}
+details.paste summary{cursor:pointer;font-size:13px}
+details.paste .inner{margin-top:8px}
+.chart-card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:14px}
+.chart-card h3{margin:0 0 4px;font-size:13px;color:var(--muted);font-weight:700}
+.chart-card svg{width:100%;height:auto;display:block}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--accent);
+  border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.spin{animation:none}}
+footer{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+@media (max-width:480px){ h1{font-size:24px} th,td{padding:6px 8px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1><span class="mark">안전</span> 길드 상황판</h1>
+  <span class="sub">메이플키우기 · 전투력 <b>조</b> / 토벌·대항·보스 <b>억</b> / 수련장 <b>만</b> 단위</span>
+</header>
+<div class="statusrow">
+  <span id="connDot"><span class="dot"></span>연결 중…</span>
+  <span id="presence" hidden></span>
+  <span id="lastEdit"></span>
+</div>
+
+<div class="tiles" id="tiles"></div>
+
+<nav class="tabs" id="tabs">
+  <button data-pane="manage" class="on">길드원 관리</button>
+  <button data-pane="input">점수 입력</button>
+  <button data-pane="search">길드 검색</button>
+</nav>
+
+<section class="pane" id="pane-manage">
+  <div class="rowbar">
+    <div class="seg" id="seg"></div>
+    <button class="btn ghost" id="rolloverBtn" title="이번주 점수를 지난주로 이동하고 새 주를 시작합니다">⟳ 주간 마감</button>
+  </div>
+  <div class="tblbox"><table id="mtable"></table></div>
+  <p class="legend" id="mlegend"></p>
+  <div class="chart-card" id="histCard" hidden>
+    <h3>토벌전 이번주 합계 추이 (억) — 주간 마감 시 기록</h3>
+    <div id="histChart"></div>
+  </div>
+</section>
+
+<section class="pane" id="pane-input" hidden>
+  <div class="hint">칸을 눌러 <b>직접 수정</b>하면 모두의 화면에 실시간 반영됩니다(빈 칸 = 미참여). 첫 수정 시 <b>수정 비밀코드</b>를 한 번 물어봅니다. <b>엑셀 업로드</b>는 길드 명부 파일(.xlsx)의 law_data 시트를 통째로 교체합니다.</div>
+  <div class="btnrow">
+    <button class="btn" id="xlsxBtn">엑셀 업로드 (.xlsx)</button>
+    <input type="file" id="xlsxFile" accept=".xlsx,.xlsm" hidden aria-label="엑셀 파일 업로드">
+    <button class="btn ghost" id="addRowBtn">＋ 길드원 추가</button>
+  </div>
+  <p class="msg" id="inputMsg"></p>
+  <div class="tblbox"><table class="grid" id="gtable"></table></div>
+  <details class="paste">
+    <summary>붙여넣기로 전체 교체 (엑셀 law_data C4:N33 범위 복사)</summary>
+    <div class="inner">
+      <textarea id="lawText" spellcheck="false" aria-label="law_data 붙여넣기"></textarea>
+      <div class="btnrow"><button class="btn" id="applyBtn">전체 교체</button></div>
+    </div>
+  </details>
+</section>
+
+<section class="pane" id="pane-search" hidden>
+  <div class="srchrow">
+    <input id="gq" placeholder="길드 이름 검색 (예: 팔일)" aria-label="길드 이름 검색">
+    <button class="btn" id="gsBtn">검색</button>
+  </div>
+  <p class="meta">mgf.gg 바로가기: <a href="https://www.mgf.gg/ranking/guild_ranking.php" target="_blank" rel="noopener">길드 랭킹 페이지</a></p>
+  <div class="hint" id="gnotfound" hidden></div>
+  <div class="chips" id="chips"></div>
+  <p class="meta" id="smeta"></p>
+  <div class="tblbox"><table id="stable"></table></div>
+  <p class="legend">없는 길드는 검색 후 <b>실시간 조회</b> 버튼을 누르면 mgf.gg에서 바로 긁어옵니다. 이미 수집한 길드는 <b>↻ 갱신</b>으로 최신화할 수 있어요. 동명 길드가 여럿이면 상위 랭킹 길드가 조회될 수 있습니다.</p>
+</section>
+
+<footer>증감·변동 표기: <span class="up">▲ 상승</span> · <span class="down">▼ 하락</span> · <span class="flat">–</span> 변화 없음/데이터 없음 · 순위합은 미참여 컨텐츠를 꼴찌(총원)로 계산 · 데이터 출처: 길드 명부(law_data), mgf.gg</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+'use strict';
+/* ══════════ 설정 ══════════ */
+const SUPABASE_URL = 'https://praykhkkxjmkpcpqaoiy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_bcZ4dmnQ7aMubs76eenGFQ_P3jXJ3Nr';
+const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+/* ══════════ 공통 ══════════ */
+const CONTENTS = [
+  {key:'tb', label:'길드 토벌전', unit:'억', ink:'var(--tb)', bg:'var(--tb-soft)'},
+  {key:'dh', label:'길드 대항전', unit:'억', ink:'var(--dh)', bg:'var(--dh-soft)'},
+  {key:'bs', label:'길드 보스대전', unit:'억', ink:'var(--bs)', bg:'var(--bs-soft)'},
+  {key:'sr', label:'길드 수련장', unit:'만', ink:'var(--sr)', bg:'var(--sr-soft)'},
+  {key:'tot', label:'종합 분석', unit:'', ink:'var(--tot)', bg:'var(--tot-soft)'}
+];
+let members = [];        // {id,name,job,lv,pw,tb:[p,c],dh,bs,sr,sort}
+let guilds = [];         // guilds 테이블 rows
+let history = [];        // {week_label, total_tb}
+let view = 'tb';
+let sortKey = 'pw', sortDir = -1;
+let guildKey = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const fmt = n => n==null ? '' : Number(n).toLocaleString('ko-KR', {maximumFractionDigits:1});
+const rankDesc = (vals, v) => v==null ? null : 1 + vals.filter(x => x!=null && x>v).length;
+const slugOf = name => 'g' + Array.from(new TextEncoder().encode(String(name).trim()))
+  .map(b=>b.toString(16).padStart(2,'0')).join('');
+function arrow(v, f){
+  if(v==null) return '<span class="flat">–</span>';
+  if(v>0) return '<span class="up">▲ '+f(v)+'</span>';
+  if(v<0) return '<span class="down">▼ '+f(-v)+'</span>';
+  return '<span class="flat">–</span>';
+}
+const active = () => members.filter(r => r.name && String(r.name).trim());
+
+/* ══════════ 계산 (엑셀과 동일) ══════════ */
+function compute(rows){
+  const N = rows.length;
+  const cols = {};
+  for(const c of ['tb','dh','bs','sr']) cols[c] = {prev: rows.map(r=>r[c][0]), cur: rows.map(r=>r[c][1])};
+  const out = rows.map(r=>{
+    const m = {id:r.id, name:r.name, job:r.job, lv:r.lv, pw:r.pw};
+    let part = 0;
+    for(const c of ['tb','dh','bs','sr']){
+      const p = r[c][0], cur = r[c][1];
+      const rk = rankDesc(cols[c].cur, cur), prk = rankDesc(cols[c].prev, p);
+      m[c] = {prev:p, cur, rank:rk,
+        diff:(p!=null && cur!=null)?cur-p:null,
+        pct:(p!=null && cur!=null && p!==0)?(cur-p)/p:null,
+        move:(rk!=null && prk!=null)?prk-rk:null};
+      if(cur!=null) part++;
+    }
+    m.part = part;
+    m.rankSum = part===0 ? null : ['tb','dh','bs','sr'].reduce((s,c)=>s+(m[c].rank==null?N:m[c].rank),0);
+    m.eff = (m.tb.cur!=null && r.pw) ? m.tb.cur/r.pw : null;
+    return m;
+  });
+  const sums = out.map(m=>m.rankSum), pws = out.map(m=>m.pw);
+  for(const m of out){
+    m.totRank = m.rankSum==null ? null : 1 + sums.filter(x=>x!=null && x<m.rankSum).length;
+    m.pwRank = m.pw==null ? null : 1 + pws.filter(x=>x!=null && x>m.pw).length;
+    m.gap = (m.pwRank!=null && m.totRank!=null) ? m.pwRank - m.totRank : null;
+  }
+  return out;
+}
+
+/* ══════════ 렌더 ══════════ */
+function renderTiles(data){
+  const N = data.length;
+  const pwSum = data.reduce((s,m)=>s+(m.pw||0),0);
+  const tbCur = data.reduce((s,m)=>s+(m.tb.cur||0),0);
+  const tbPrev = data.reduce((s,m)=>s+(m.tb.prev||0),0);
+  const partTb = data.filter(m=>m.tb.cur!=null).length;
+  const top = data.filter(m=>m.totRank===1).map(m=>m.name).join(', ') || '—';
+  $('tiles').innerHTML = `
+    <div class="tile"><div class="lb">길드원</div><div class="v">${N}<small>명</small></div><div class="d">이번주 토벌 참여 ${partTb}명</div></div>
+    <div class="tile"><div class="lb">전투력 합계</div><div class="v">${fmt(Math.round(pwSum))}<small>조</small></div><div class="d">≈ ${(pwSum/10000).toFixed(1)}경 · 평균 ${fmt(Math.round(pwSum/(N||1)))}조</div></div>
+    <div class="tile"><div class="lb">토벌전 이번주 합계</div><div class="v">${fmt(Math.round(tbCur))}<small>억</small></div><div class="d">전주 대비 ${arrow(Math.round(tbCur-tbPrev), fmt)}</div></div>
+    <div class="tile"><div class="lb">종합 1위</div><div class="v" style="font-size:18px">${esc(top)}</div><div class="d">컨텐츠 순위합 기준</div></div>`;
+}
+function renderSeg(){
+  $('seg').innerHTML = CONTENTS.map(c=>
+    `<button data-v="${c.key}" style="--seg-ink:${c.ink};--seg-bg:${c.bg}" class="${view===c.key?'on':''}">${c.label}${c.unit?`<span class="unit">(${c.unit})</span>`:''}</button>`).join('');
+}
+const CONTENT_COLS = [
+  {k:'name',t:'길드원',txt:1},{k:'job',t:'직업',txt:1},{k:'lv',t:'LV'},{k:'pw',t:'전투력(조)'},
+  {k:'prev',t:'지난주'},{k:'cur',t:'이번주'},{k:'diff',t:'증감'},{k:'pct',t:'증감률'},{k:'rank',t:'순위'},{k:'move',t:'변동'}];
+const TOT_COLS = [
+  {k:'name',t:'길드원',txt:1},{k:'totRank',t:'종합순위'},{k:'rankSum',t:'순위합'},{k:'ranks',t:'순위 토·대·보·수'},
+  {k:'part',t:'참여'},{k:'pw',t:'전투력(조)'},{k:'pwRank',t:'전투력순위'},{k:'gap',t:'투력대비'},{k:'eff',t:'토벌÷투력'}];
+const sortVal = (m,key)=> ['prev','cur','diff','pct','rank','move'].includes(key) ? m[view]?.[key] : m[key];
+
+function renderTable(data){
+  const cols = view==='tot' ? TOT_COLS : CONTENT_COLS;
+  const rows = [...data].sort((a,b)=>{
+    const av = sortVal(a,sortKey), bv = sortVal(b,sortKey);
+    if(av==null && bv==null) return 0;
+    if(av==null) return 1; if(bv==null) return -1;
+    if(typeof av==='string') return sortDir*av.localeCompare(bv,'ko');
+    return sortDir*(av-bv);
+  });
+  const head = '<thead><tr>'+cols.map(c=>
+    `<th class="${c.txt?'txt':''}" data-k="${c.k}">${c.t}${sortKey===c.k?`<span class="ar"> ${sortDir<0?'▼':'▲'}</span>`:''}</th>`).join('')+'</tr></thead>';
+  const body = '<tbody>'+rows.map(m=>{
+    if(view==='tot'){
+      const rks = ['tb','dh','bs','sr'].map(c=>m[c].rank==null?'–':m[c].rank).join(' · ');
+      return `<tr><td class="txt name">${esc(m.name)}</td>`+
+        `<td>${m.totRank==null?'<span class="flat">–</span>':`<span class="pill ${m.totRank<=3?'g':'n'}">${m.totRank}위</span>`}</td>`+
+        `<td>${m.rankSum==null?'<span class="flat">–</span>':fmt(m.rankSum)}</td><td class="mut">${rks}</td><td>${m.part}/4</td>`+
+        `<td class="mut">${fmt(m.pw)}</td><td class="mut">${m.pwRank??''}위</td><td>${arrow(m.gap,v=>v)}</td>`+
+        `<td class="mut">${m.eff==null?'–':m.eff.toFixed(2)}</td></tr>`;
+    }
+    const c = m[view];
+    return `<tr><td class="txt name">${esc(m.name)}</td><td class="txt mut">${esc(m.job)}</td><td class="mut">${m.lv??''}</td><td>${fmt(m.pw)}</td>`+
+      `<td class="mut">${c.prev==null?'':fmt(c.prev)}</td><td><b>${c.cur==null?'':fmt(c.cur)}</b></td>`+
+      `<td>${arrow(c.diff,fmt)}</td><td>${c.pct==null?'<span class="flat">–</span>':arrow(c.pct,v=>(v*100).toFixed(1)+'%')}</td>`+
+      `<td>${c.rank==null?'<span class="flat">–</span>':`<span class="pill ${c.rank<=3?'g':'n'}">${c.rank}위</span>`}</td>`+
+      `<td>${arrow(c.move,v=>v)}</td></tr>`;
+  }).join('')+'</tbody>';
+  $('mtable').innerHTML = head+body;
+  $('mlegend').innerHTML = view==='tot'
+    ? '<b>종합순위</b> = 4개 컨텐츠 등수의 합(순위합)이 낮은 순 — <b>전투력은 반영되지 않습니다</b> (미참여 컨텐츠는 꼴찌 처리) · 전투력·전투력순위·투력대비(전투력순위 − 종합순위)는 참고용 · <b>토벌÷투력</b> = 이번주 토벌전 점수 ÷ 전투력'
+    : '<b>변동</b> = 지난주 순위 대비 몇 계단 이동했는지 (▲ 상승) · 열 머리글을 누르면 정렬됩니다';
+}
+function renderAll(){
+  const data = compute(active());
+  renderTiles(data); renderSeg(); renderTable(data);
+  const last = members.reduce((mx,r)=> r.updated_at>mx?r.updated_at:mx, '');
+  $('lastEdit').textContent = last ? '마지막 수정 ' + new Date(last).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+}
+
+/* ══════════ 히스토리 차트 ══════════ */
+function renderHistory(){
+  if(history.length < 2){ $('histCard').hidden = true; return; }
+  $('histCard').hidden = false;
+  const pts = history.map(h=>h.total_tb);
+  const labels = history.map(h=>h.week_label);
+  const W=720, H=150, P=34, PB=26;
+  const min = Math.min(...pts), max = Math.max(...pts), span = (max-min)||1;
+  const x = i => P + i*(W-P*2)/(pts.length-1);
+  const y = v => 12 + (H-PB-12)*(1-(v-min)/span);
+  const path = pts.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const li = pts.length-1;
+  $('histChart').innerHTML =
+    `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="주차별 토벌전 합계 추이">`+
+    `<line x1="${P}" y1="${H-PB}" x2="${W-P}" y2="${H-PB}" stroke="var(--line)"/>`+
+    `<path d="${path}" fill="none" stroke="var(--tb)" stroke-width="2"/>`+
+    pts.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="${i===li?4:2.5}" fill="var(--tb)"/>`).join('')+
+    `<text x="${x(li)}" y="${y(pts[li])-8}" text-anchor="end" font-size="12" font-weight="700" fill="var(--ink)">${fmt(Math.round(pts[li]))}</text>`+
+    labels.map((l,i)=>`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--muted)">${esc(l)}</text>`).join('')+
+    `</svg>`;
+}
+
+/* ══════════ 비밀코드 · RPC ══════════ */
+function getCode(){
+  let c = null;
+  try{ c = localStorage.getItem('guild-edit-code'); }catch(e){}
+  if(!c){
+    c = prompt('수정 비밀코드를 입력하세요 (길드 단톡방 공지 참고)');
+    if(c){ try{ localStorage.setItem('guild-edit-code', c); }catch(e){} }
+  }
+  return c;
+}
+async function rpc(fn, args){
+  const code = getCode();
+  if(!code) return {error:'no_code'};
+  const {data, error} = await sb.rpc(fn, {p_code: code, ...args});
+  if(error){
+    if(/INVALID_CODE/.test(error.message||'')){
+      try{ localStorage.removeItem('guild-edit-code'); }catch(e){}
+      alert('비밀코드가 틀립니다. 다시 시도하면 다시 물어봅니다.');
+      return {error:'bad_code'};
+    }
+    return {error: error.message};
+  }
+  return {data};
+}
+
+/* ══════════ 데이터 로드 ══════════ */
+const toModel = r => ({id:r.id, name:r.name, job:r.job, lv:r.lv, pw:r.pw==null?null:+r.pw,
+  tb:[r.tb_prev==null?null:+r.tb_prev, r.tb_cur==null?null:+r.tb_cur],
+  dh:[r.dh_prev==null?null:+r.dh_prev, r.dh_cur==null?null:+r.dh_cur],
+  bs:[r.bs_prev==null?null:+r.bs_prev, r.bs_cur==null?null:+r.bs_cur],
+  sr:[r.sr_prev==null?null:+r.sr_prev, r.sr_cur==null?null:+r.sr_cur],
+  sort:r.sort_order??0, updated_at:r.updated_at});
+const toDbShape = r => ({id:r.id, name:r.name, job:r.job, lv:r.lv, pw:r.pw,
+  tb_prev:r.tb[0], tb_cur:r.tb[1], dh_prev:r.dh[0], dh_cur:r.dh[1],
+  bs_prev:r.bs[0], bs_cur:r.bs[1], sr_prev:r.sr[0], sr_cur:r.sr[1], sort_order:r.sort});
+
+async function loadMembers(){
+  const {data, error} = await sb.from('members').select('*').order('sort_order').order('name');
+  if(error) return;
+  members = data.map(toModel);
+  renderAll();
+  if(!$('pane-input').hidden && !gridDirty()) renderGrid();
+}
+async function loadGuilds(){
+  const {data} = await sb.from('guilds').select('*').order('updated_at', {ascending:false});
+  if(data){ guilds = data; if(!$('pane-search').hidden) renderSearch(); }
+}
+async function loadHistory(){
+  const {data} = await sb.from('history').select('week_label,snapshot,created_at').order('created_at');
+  if(data){
+    history = data.map(h=>({week_label:h.week_label,
+      total_tb: (h.snapshot||[]).reduce((s,m)=>s+(+m.tb_cur||0),0)}));
+    renderHistory();
+  }
+}
+
+/* ══════════ 입력 그리드 ══════════ */
+const FIELD = {tb0:['tb',0],tb1:['tb',1],dh0:['dh',0],dh1:['dh',1],bs0:['bs',0],bs1:['bs',1],sr0:['sr',0],sr1:['sr',1]};
+const pending = new Map();   // id → timer
+const gridDirty = () => pending.size > 0;
+
+function renderGrid(){
+  let h = '<thead><tr><th class="txt" colspan="4" style="background:var(--tot-soft)">기본 정보</th>';
+  for(const c of CONTENTS.slice(0,4)) h += `<th colspan="2" style="background:${c.bg};color:${c.ink}">${c.label}(${c.unit})</th>`;
+  h += '<th style="background:var(--surface2)"></th></tr><tr><th>LV</th><th class="txt">직업</th><th class="txt">길드원</th><th>전투력(조)</th>'
+     + '<th>지난주</th><th>이번주</th>'.repeat(4) + '<th></th></tr></thead><tbody>';
+  for(const r of [...members].sort((a,b)=>a.sort-b.sort)){
+    const num=(f,v)=>`<td><input inputmode="decimal" data-id="${r.id}" data-f="${f}" value="${v==null?'':v}"></td>`;
+    const txt=(f,v)=>`<td><input class="wide" data-id="${r.id}" data-f="${f}" value="${esc(v)}"></td>`;
+    h += `<tr data-row="${r.id}">${num('lv',r.lv)}${txt('job',r.job)}${txt('name',r.name)}${num('pw',r.pw)}`
+       + num('tb0',r.tb[0])+num('tb1',r.tb[1])+num('dh0',r.dh[0])+num('dh1',r.dh[1])
+       + num('bs0',r.bs[0])+num('bs1',r.bs[1])+num('sr0',r.sr[0])+num('sr1',r.sr[1])
+       + `<td><button class="del" data-id="${r.id}" aria-label="${esc(r.name)||'행'} 삭제" title="행 삭제">×</button></td></tr>`;
+  }
+  $('gtable').innerHTML = h+'</tbody>';
+}
+function flushRow(id){
+  clearTimeout(pending.get(id)?.t);
+  pending.set(id, {t:setTimeout(async ()=>{
+    pending.delete(id);
+    const r = members.find(m=>m.id===id);
+    const tr = document.querySelector(`tr[data-row="${id}"]`);
+    if(!r) return;
+    tr?.classList.add('saving');
+    const res = await rpc('upsert_member', {p: toDbShape(r)});
+    tr?.classList.remove('saving');
+    const msg = $('inputMsg');
+    if(res.error && res.error!=='no_code' && res.error!=='bad_code'){
+      msg.className='msg err'; msg.textContent='저장 실패: '+res.error;
+    } else if(!res.error){
+      msg.className='msg ok'; msg.textContent='저장됨 — 모든 화면에 반영됩니다.';
+      renderAll();
+    }
+  }, 700)});
+}
+$('gtable').addEventListener('input', e=>{
+  const el = e.target; if(!el.dataset.f) return;
+  const id = el.dataset.id, f = el.dataset.f, raw = el.value.trim();
+  const r = members.find(m=>m.id===id); if(!r) return;
+  if(f==='job'||f==='name'){ r[f] = raw || null; }
+  else{
+    const n = raw==='' ? null : Number(raw.replace(/,/g,''));
+    const v = (n==null||isNaN(n)) ? null : n;
+    if(FIELD[f]) r[FIELD[f][0]][FIELD[f][1]] = v; else r[f] = v;
+  }
+  flushRow(id);
+});
+$('gtable').addEventListener('click', async e=>{
+  const b = e.target.closest('.del'); if(!b) return;
+  const r = members.find(m=>m.id===b.dataset.id);
+  if(!r || !confirm(`'${r.name||'이 행'}' 을(를) 삭제할까요? 모두의 화면에서 지워집니다.`)) return;
+  const res = await rpc('delete_member', {p_id: r.id});
+  if(!res.error){ members = members.filter(m=>m.id!==r.id); renderGrid(); renderAll(); }
+});
+$('addRowBtn').addEventListener('click', async ()=>{
+  const id = crypto.randomUUID();
+  const r = {id, name:null, job:null, lv:null, pw:null, tb:[null,null], dh:[null,null], bs:[null,null], sr:[null,null],
+             sort:(Math.max(0,...members.map(m=>m.sort))+1)};
+  members.push(r); renderGrid();
+  const inputs = document.querySelectorAll(`tr[data-row="${id}"] input`);
+  if(inputs[2]) inputs[2].focus();
+});
+
+/* 엑셀 업로드 / 붙여넣기 → 전체 교체 */
+function parseAoa(aoa){
+  let hr=-1, nc=-1;
+  for(let i=0;i<Math.min(aoa.length,20);i++){
+    const j=(aoa[i]||[]).findIndex(v=>typeof v==='string' && v.trim()==='길드원');
+    if(j>=2){ hr=i; nc=j; break; }
+  }
+  if(hr<0) return [];
+  const num = v => (v==null||v==='')?null:(isNaN(Number(String(v).replace(/,/g,'')))?null:Number(String(v).replace(/,/g,'')));
+  const rows=[];
+  for(let i=hr+1;i<aoa.length;i++){
+    const r=aoa[i]||[]; const name=r[nc];
+    if(name==null || String(name).trim()==='') continue;
+    if(typeof name==='string' && /평균|합계|아이디/.test(name)) continue;
+    rows.push({name:String(name).trim(), job:r[nc-1]==null?null:String(r[nc-1]), lv:num(r[nc-2]), pw:num(r[nc+1]),
+      tb_prev:num(r[nc+2]), tb_cur:num(r[nc+3]), dh_prev:num(r[nc+4]), dh_cur:num(r[nc+5]),
+      bs_prev:num(r[nc+6]), bs_cur:num(r[nc+7]), sr_prev:num(r[nc+8]), sr_cur:num(r[nc+9])});
+  }
+  return rows;
+}
+async function replaceAll(rows, label){
+  const msg = $('inputMsg');
+  if(!rows.length){ msg.className='msg err'; msg.textContent='읽을 수 있는 행이 없습니다.'; return; }
+  if(!confirm(`${rows.length}명으로 전체 명단을 교체합니다. 모두의 화면이 바뀝니다. 계속할까요?`)) return;
+  msg.className='msg'; msg.innerHTML='<span class="spin"></span>교체 중…';
+  const res = await rpc('replace_members', {p: rows});
+  if(res.error){ if(res.error!=='no_code'&&res.error!=='bad_code'){msg.className='msg err'; msg.textContent='실패: '+res.error;} else msg.textContent=''; return; }
+  msg.className='msg ok'; msg.textContent=`${label}에서 ${res.data}명 교체 완료.`;
+  await loadMembers(); renderGrid();
+}
+$('xlsxBtn').addEventListener('click', ()=>{
+  if(typeof XLSX==='undefined'){ const m=$('inputMsg'); m.className='msg err'; m.textContent='엑셀 모듈 로드 실패 — 새로고침해 주세요.'; return; }
+  $('xlsxFile').click();
+});
+$('xlsxFile').addEventListener('change', e=>{
+  const f = e.target.files[0]; e.target.value=''; if(!f) return;
+  const fr = new FileReader();
+  fr.onload = ()=>{
+    try{
+      const wb = XLSX.read(fr.result,{type:'array'});
+      const sh = wb.SheetNames.includes('law_data')?'law_data':wb.SheetNames[0];
+      replaceAll(parseAoa(XLSX.utils.sheet_to_json(wb.Sheets[sh],{header:1,defval:null})), `'${sh}' 시트`);
+    }catch(err){ const m=$('inputMsg'); m.className='msg err'; m.textContent='파일을 읽지 못했습니다.'; }
+  };
+  fr.readAsArrayBuffer(f);
+});
+$('applyBtn').addEventListener('click', ()=>{
+  const lines = $('lawText').value.split(/\r?\n/).filter(l=>l.trim());
+  const num = s => (s==null||s.trim()==='')?null:(isNaN(Number(s.replace(/,/g,'')))?null:Number(s.replace(/,/g,'')));
+  const rows=[];
+  for(const line of lines){
+    let c = line.split('\t');
+    if(c.length===1) c = line.trim().split(/\s+/);
+    const isN = s=>s!=='' && !isNaN(Number(String(s).replace(/,/g,'')));
+    if(c.length>=13 && isN(c[0]) && isN(c[1]) && !isN(c[2])) c = c.slice(1);
+    if(c.length<12 || !c[2] || isN(c[2])) continue;
+    rows.push({lv:num(c[0]), job:c[1]||null, name:c[2].trim(), pw:num(c[3]),
+      tb_prev:num(c[4]), tb_cur:num(c[5]), dh_prev:num(c[6]), dh_cur:num(c[7]),
+      bs_prev:num(c[8]), bs_cur:num(c[9]), sr_prev:num(c[10]), sr_cur:num(c[11])});
+  }
+  replaceAll(rows, '붙여넣기');
+});
+
+/* ══════════ 주간 마감 ══════════ */
+$('rolloverBtn').addEventListener('click', async ()=>{
+  const week = prompt('이번 주 라벨을 입력하세요 (기록용)', new Date().toISOString().slice(0,10));
+  if(week==null) return;
+  if(!confirm('이번주 점수를 지난주로 이동하고 이번주 칸을 비웁니다.\n현재 상태는 추이 기록으로 저장됩니다. 계속할까요?')) return;
+  const res = await rpc('rollover_week', {p_week: week});
+  if(!res.error){ await loadMembers(); await loadHistory(); alert('주간 마감 완료! 새 주가 시작됐습니다.'); }
+});
+
+/* ══════════ 길드 검색 ══════════ */
+function renderSearch(){
+  if(!guilds.length){ $('chips').innerHTML=''; $('smeta').textContent=''; $('stable').innerHTML=''; return; }
+  let g = guilds.find(x=>x.id===guildKey) || guilds.find(x=>x.id===slugOf('안전')) || guilds[0];
+  guildKey = g.id;
+  $('chips').innerHTML = guilds.map(x=>
+    `<button data-g="${x.id}" class="${guildKey===x.id?'on':''}">${esc(x.label)}</button>`).join('');
+  const rows = active();
+  const myAvg = rows.reduce((s,r)=>s+(r.pw||0),0)/(rows.length||1);
+  const gRows = g.rows||[];
+  const gAvg = gRows.reduce((s,r)=>s+(+r[3]||0),0)/(gRows.length||1);
+  $('smeta').innerHTML =
+    `수집 ${esc(g.date_label||'')} · ${gRows.length}명${g.server?` · ${esc(g.server)}`:''} · 전투력 평균 <b>${fmt(Math.round(gAvg))}조</b>`+
+    (myAvg?` (우리 명부 평균의 ${(gAvg/myAvg).toFixed(1)}배)`:'')+
+    ` · <a href="${esc(g.url||'#')}" target="_blank" rel="noopener">mgf.gg에서 보기</a>`+
+    ` · <button class="btn ghost" id="refreshGuild" style="padding:2px 10px;font-size:12px">↻ 갱신</button>`;
+  $('refreshGuild').onclick = ()=>liveFetch(g.label.replace(/\s*\(.*\)$/,''));
+  $('stable').innerHTML =
+    '<thead><tr><th>NO.</th><th class="txt">캐릭터명</th><th class="txt">직업</th><th>LV</th><th>전투력(조)</th><th>토벌전(억)</th></tr></thead><tbody>'+
+    gRows.map((r,i)=>`<tr><td class="mut">${i+1}</td><td class="txt name">${esc(r[0])}</td><td class="txt mut">${esc(r[1])}</td><td class="mut">${r[2]??''}</td><td>${fmt(r[3])}</td><td>${fmt(r[4])}</td></tr>`).join('')+'</tbody>';
+}
+async function liveFetch(name){
+  const box = $('gnotfound');
+  box.hidden = false;
+  box.innerHTML = `<span class="spin"></span>mgf.gg에서 ‘<b>${esc(name)}</b>’ 길드를 조회하는 중…`;
+  try{
+    const {data, error} = await sb.functions.invoke('rapid-task', {body:{guild:name}});   // 함수 슬러그: rapid-task (표시 이름 fetch-guild)
+    if(error) throw error;
+    if(data && data.ok){
+      box.innerHTML = `<span class="okc">✔</span> ‘<b>${esc(data.guild.label)}</b>’ 조회 완료 (${(data.guild.rows||[]).length}명).`;
+      await loadGuilds();
+      guildKey = data.guild.id;
+      renderSearch();
+      setTimeout(()=>{ box.hidden = true; }, 4000);
+    }else if(data && data.error==='not_found'){
+      box.innerHTML = `‘<b>${esc(name)}</b>’ 길드를 mgf.gg에서 찾지 못했습니다. 이름을 확인해 주세요.`;
+    }else{
+      box.innerHTML = `조회 실패 (${esc(data?.error||'알 수 없음')}). 잠시 후 다시 시도해 주세요.`;
+    }
+  }catch(e){
+    box.innerHTML = '조회 실패 — 네트워크 또는 함수 오류입니다. 잠시 후 다시 시도해 주세요.';
+  }
+}
+function doGuildSearch(){
+  const q = $('gq').value.trim();
+  const box = $('gnotfound');
+  if(!q){ box.hidden=true; return; }
+  const norm = s => s.replace(/\s+/g,'').toLowerCase();
+  const hit = guilds.find(g => norm(g.label).includes(norm(q)));
+  if(hit){ guildKey = hit.id; box.hidden = true; renderSearch(); return; }
+  box.hidden = false;
+  box.innerHTML = `‘<b>${esc(q)}</b>’ 길드는 아직 수집돼 있지 않습니다. `
+    + `<button class="btn" id="liveBtn" style="padding:4px 12px;font-size:13px">⚡ mgf.gg에서 실시간 조회</button>`;
+  $('liveBtn').onclick = ()=>liveFetch(q);
+}
+$('gsBtn').addEventListener('click', doGuildSearch);
+$('gq').addEventListener('keydown', e=>{ if(e.key==='Enter') doGuildSearch(); });
+$('chips').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  guildKey = b.dataset.g; $('gnotfound').hidden = true; renderSearch();
+});
+
+/* ══════════ 탭 · 정렬 ══════════ */
+$('tabs').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on', x===b));
+  for(const p of ['manage','input','search']) $('pane-'+p).hidden = (b.dataset.pane!==p);
+  if(b.dataset.pane==='input') renderGrid();
+  if(b.dataset.pane==='search') renderSearch();
+});
+$('seg').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  const prev = view; view = b.dataset.v;
+  if(view==='tot' && prev!=='tot'){ sortKey='totRank'; sortDir=1; }
+  else if(view!=='tot' && prev==='tot'){ sortKey='pw'; sortDir=-1; }
+  renderSeg(); renderTable(compute(active()));
+});
+$('mtable').addEventListener('click', e=>{
+  const th = e.target.closest('th'); if(!th || th.dataset.k==='ranks') return;
+  const k = th.dataset.k;
+  if(sortKey===k) sortDir = -sortDir;
+  else { sortKey=k; sortDir = ['name','job','rank','totRank','rankSum','pwRank'].includes(k)?1:-1; }
+  renderTable(compute(active()));
+});
+
+/* ══════════ 실시간 · 접속자 ══════════ */
+function startRealtime(){
+  let t1,t2,t3;
+  sb.channel('board-db')
+    .on('postgres_changes',{event:'*',schema:'public',table:'members'},()=>{ clearTimeout(t1); t1=setTimeout(loadMembers,350); })
+    .on('postgres_changes',{event:'*',schema:'public',table:'guilds'},()=>{ clearTimeout(t2); t2=setTimeout(loadGuilds,350); })
+    .on('postgres_changes',{event:'*',schema:'public',table:'history'},()=>{ clearTimeout(t3); t3=setTimeout(loadHistory,350); })
+    .subscribe(status=>{
+      const on = status==='SUBSCRIBED';
+      $('connDot').innerHTML = `<span class="dot ${on?'on':''}"></span>${on?'실시간 연결됨':'연결 대기 중…'}`;
+    });
+  const me = crypto.randomUUID();
+  const pch = sb.channel('board-presence', {config:{presence:{key:me}}});
+  pch.on('presence',{event:'sync'},()=>{
+      const n = Object.keys(pch.presenceState()).length;
+      const el = $('presence');
+      el.hidden = n<=1;
+      el.textContent = `👀 지금 ${n}명 보는 중`;
+    }).subscribe(async status=>{ if(status==='SUBSCRIBED') await pch.track({at:Date.now()}); });
+}
+
+/* ══════════ 시작 ══════════ */
+(async ()=>{
+  if(!sb){
+    document.querySelector('.wrap').insertAdjacentHTML('afterbegin',
+      '<div class="hint">데이터 모듈을 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.</div>');
+    return;
+  }
+  await Promise.all([loadMembers(), loadGuilds(), loadHistory()]);
+  startRealtime();
+})();
+</script>
+</body>
+</html>

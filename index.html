@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>안전 길드 상황판</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
 <style>
 :root{
   --bg:#F5F3EE; --surface:#FFFFFF; --surface2:#EDEAE2; --ink:#22272E; --muted:#6E7681; --line:#E0DCD1;
@@ -27,11 +26,11 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);
-  font-family:'IBM Plex Sans KR',-apple-system,'Malgun Gothic',sans-serif;font-size:14px;line-height:1.5;
+  font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo','Noto Sans KR',sans-serif;font-size:14px;line-height:1.5;
   padding-inline:16px;padding-block:0 40px}
 .wrap{max-width:1080px;margin:0 auto}
 header.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;padding-block:26px 6px}
-h1{font-family:'Black Han Sans','IBM Plex Sans KR',sans-serif;font-weight:400;font-size:30px;margin:0;letter-spacing:.5px}
+h1{font-weight:800;font-size:28px;margin:0}
 h1 .mark{color:var(--accent)}
 .top .sub{color:var(--muted);font-size:13px}
 .statusrow{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12px;color:var(--muted)}
@@ -108,6 +107,13 @@ details.paste .inner{margin-top:8px}
 .chart-card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:14px}
 .chart-card h3{margin:0 0 4px;font-size:13px;color:var(--muted);font-weight:700}
 .chart-card svg{width:100%;height:auto;display:block}
+.calcgroup{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.calcgroup h4{margin:0 0 8px;font-size:12px;color:var(--muted);letter-spacing:.04em}
+.calcgroup .fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 12px}
+.calcgroup .inp label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:2px}
+.calcgroup .inp input{width:100%;font:inherit;font-size:13px;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:6px;padding:5px 8px;text-align:right;font-variant-numeric:tabular-nums}
+.calcgroup .inp input:focus{outline:2px solid var(--accent);outline-offset:-1px}
 .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--accent);
   border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px;margin-right:6px}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -131,9 +137,11 @@ footer{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid va
 <div class="tiles" id="tiles"></div>
 
 <nav class="tabs" id="tabs">
-  <button data-pane="manage" class="on">길드원 관리</button>
+  <button data-pane="manage" class="on">길드원 명단</button>
   <button data-pane="input">점수 입력</button>
   <button data-pane="search">길드 검색</button>
+  <button data-pane="history">지난 기록</button>
+  <button data-pane="calc">전투력 계산기</button>
 </nav>
 
 <section class="pane" id="pane-manage">
@@ -141,12 +149,9 @@ footer{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid va
     <div class="seg" id="seg"></div>
     <button class="btn ghost" id="rolloverBtn" title="이번주 점수를 지난주로 이동하고 새 주를 시작합니다">⟳ 주간 마감</button>
   </div>
+  <p class="meta" id="syncMeta"></p>
   <div class="tblbox"><table id="mtable"></table></div>
   <p class="legend" id="mlegend"></p>
-  <div class="chart-card" id="histCard" hidden>
-    <h3>토벌전 이번주 합계 추이 (억) — 주간 마감 시 기록</h3>
-    <div id="histChart"></div>
-  </div>
 </section>
 
 <section class="pane" id="pane-input" hidden>
@@ -169,15 +174,44 @@ footer{margin-top:26px;font-size:12px;color:var(--muted);border-top:1px solid va
 
 <section class="pane" id="pane-search" hidden>
   <div class="srchrow">
-    <input id="gq" placeholder="길드 이름 검색 (예: 팔일)" aria-label="길드 이름 검색">
+    <input id="gq" placeholder="길드 이름 검색 — 쉼표로 최대 5개 비교 (예: 팔일, 모두있음, 안전)" aria-label="길드 이름 검색">
     <button class="btn" id="gsBtn">검색</button>
   </div>
+  <div id="compareBox" hidden></div>
   <p class="meta">mgf.gg 바로가기: <a href="https://www.mgf.gg/ranking/guild_ranking.php" target="_blank" rel="noopener">길드 랭킹 페이지</a></p>
   <div class="hint" id="gnotfound" hidden></div>
   <div class="chips" id="chips"></div>
   <p class="meta" id="smeta"></p>
   <div class="tblbox"><table id="stable"></table></div>
-  <p class="legend">없는 길드는 검색 후 <b>실시간 조회</b> 버튼을 누르면 mgf.gg에서 바로 긁어옵니다. 이미 수집한 길드는 <b>↻ 갱신</b>으로 최신화할 수 있어요. 동명 길드가 여럿이면 상위 랭킹 길드가 조회될 수 있습니다.</p>
+  <p class="legend">없는 길드는 검색 후 <b>실시간 조회</b> 버튼을 누르면 mgf.gg에서 바로 긁어옵니다. 쉼표(,)로 구분하면 <b>최대 5개 길드를 한 번에 비교</b>합니다. 이미 수집한 길드는 <b>↻ 갱신</b>으로 최신화할 수 있어요. 동명 길드가 여럿이면 상위 랭킹 길드가 조회될 수 있습니다.</p>
+</section>
+
+<section class="pane" id="pane-history" hidden>
+  <div class="hint"><b>주간 마감</b>을 누를 때마다 그 시점의 전체 점수가 여기에 기록됩니다. 주차를 선택하면 당시 명단 전체를 볼 수 있어요.</div>
+  <div class="chips" id="histChips"></div>
+  <p class="meta" id="histMeta"></p>
+  <div class="tblbox"><table id="htable"></table></div>
+  <div class="chart-card" id="histCard" hidden>
+    <h3>토벌전 이번주 합계 추이 (억)</h3>
+    <div id="histChart"></div>
+  </div>
+</section>
+
+<section class="pane" id="pane-calc" hidden>
+  <div class="hint">게임 <b>스탯 정보</b> 창의 수치를 그대로 넣으면 <b>표시 전투력</b>을 재현하고, 값을 바꿔보면 예상 전투력과 산출 근거가 즉시 갱신됩니다. 계산식은 넥슨 공식 전투 가이드의 가중치(25개 항)를 따르며, 실계정 2건으로 검증됐습니다(오차 1% 미만). 항목은 <b>그룹 안에서는 합산, 그룹끼리는 곱연산</b>으로 작동합니다. 입력값은 이 브라우저에만 저장됩니다.</div>
+  <div class="tiles">
+    <div class="tile"><div class="lb">예상 전투력</div><div class="v" id="calcCP" style="font-size:24px">—</div><div class="d" id="calcCPraw"></div></div>
+    <div class="tile"><div class="lb">기준 대비</div><div class="v" id="calcDelta">—</div><div class="d">아래 값 변경 시 즉시 반영 · <button class="btn ghost" id="calcSetBase" style="padding:1px 8px;font-size:11px">현재를 기준으로</button></div></div>
+  </div>
+  <div class="btnrow">
+    <button class="btn ghost" id="calcReset">예시값(재훈)으로 초기화</button>
+  </div>
+  <div id="calcInputs"></div>
+  <div class="chart-card" style="margin-top:14px">
+    <h3>산출 근거 — 그룹별 배율 (기본치 × 아래 배율 전부의 곱)</h3>
+    <div class="tblbox" style="border:none"><table id="calcBreak" style="min-width:480px"></table></div>
+  </div>
+  <p class="legend">스탯창에 없는 항목: <b>2차 스킬 레벨</b>과 <b>메인/서브 마스터리 습득 수</b>(동료 도감 마스터리)는 전투력에 크게 반영되지만 스탯 정보 창에는 안 보입니다 — 게임에서 확인해 채워 넣으면 오차가 거의 사라집니다. STR·DEX·INT·LUK, 경험치·메소 획득량, 디버프 내성, 크리티컬 저항, 초당 MP 회복은 <b>전투력 미반영</b> 스탯입니다.</p>
 </section>
 
 <footer>증감·변동 표기: <span class="up">▲ 상승</span> · <span class="down">▼ 하락</span> · <span class="flat">–</span> 변화 없음/데이터 없음 · 순위합은 미참여 컨텐츠를 꼴찌(총원)로 계산 · 데이터 출처: 길드 명부(law_data), mgf.gg</footer>
@@ -321,7 +355,7 @@ function renderAll(){
 function renderHistory(){
   if(history.length < 2){ $('histCard').hidden = true; return; }
   $('histCard').hidden = false;
-  const pts = history.map(h=>h.total_tb);
+  const pts = history.map(h=>(h.snapshot||[]).reduce((s,m)=>s+(+m.tb_cur||0),0));
   const labels = history.map(h=>h.week_label);
   const W=720, H=150, P=34, PB=26;
   const min = Math.min(...pts), max = Math.max(...pts), span = (max-min)||1;
@@ -338,6 +372,34 @@ function renderHistory(){
     labels.map((l,i)=>`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--muted)">${esc(l)}</text>`).join('')+
     `</svg>`;
 }
+
+/* ══════════ 지난 기록 페이지 ══════════ */
+let histIdx = -1;
+function renderHistoryPage(){
+  if(!history.length){
+    $('histChips').innerHTML=''; $('histMeta').textContent='아직 기록이 없습니다 — 길드원 명단 탭의 ⟳ 주간 마감을 누르면 첫 기록이 생깁니다.';
+    $('htable').innerHTML=''; return;
+  }
+  if(histIdx<0 || histIdx>=history.length) histIdx = history.length-1;
+  $('histChips').innerHTML = history.map((h,i)=>
+    `<button data-h="${i}" class="${i===histIdx?'on':''}">${esc(h.week_label)}</button>`).join('');
+  const h = history[histIdx];
+  const rows = [...(h.snapshot||[])].sort((a,b)=>(+b.pw||0)-(+a.pw||0));
+  const sum = f => rows.reduce((s,m)=>s+(+m[f]||0),0);
+  $('histMeta').innerHTML = `<b>${esc(h.week_label)}</b> 마감 (${new Date(h.created_at).toLocaleString('ko-KR')}) · ${rows.length}명 · 마감 시점의 '이번주' 점수입니다`;
+  $('htable').innerHTML =
+    '<thead><tr><th>NO.</th><th class="txt">길드원</th><th>전투력(조)</th><th>토벌전(억)</th><th>대항전(억)</th><th>보스대전(억)</th><th>수련장(만)</th></tr></thead><tbody>'+
+    rows.map((m,i)=>`<tr><td class="mut">${i+1}</td><td class="txt name">${esc(m.name)}</td><td>${fmt(m.pw)}</td>`+
+      `<td>${fmt(m.tb_cur)}</td><td>${fmt(m.dh_cur)}</td><td>${fmt(m.bs_cur)}</td><td>${fmt(m.sr_cur)}</td></tr>`).join('')+
+    `<tr style="font-weight:700"><td></td><td class="txt">합계</td><td>${fmt(Math.round(sum('pw')))}</td>`+
+    `<td>${fmt(Math.round(sum('tb_cur')))}</td><td>${fmt(Math.round(sum('dh_cur')))}</td><td>${fmt(Math.round(sum('bs_cur')))}</td><td>${fmt(Math.round(sum('sr_cur')))}</td></tr>`+
+    '</tbody>';
+  renderHistory();
+}
+$('histChips').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  histIdx = +b.dataset.h; renderHistoryPage();
+});
 
 /* ══════════ 비밀코드 · RPC ══════════ */
 function getCode(){
@@ -384,14 +446,21 @@ async function loadMembers(){
 }
 async function loadGuilds(){
   const {data} = await sb.from('guilds').select('*').order('updated_at', {ascending:false});
-  if(data){ guilds = data; if(!$('pane-search').hidden) renderSearch(); }
+  if(data){
+    guilds = data;
+    if(!$('pane-search').hidden) renderSearch();
+    const mine = guilds.find(g=>g.id===slugOf('안전'));
+    $('syncMeta').innerHTML = mine
+      ? `⟳ 전투력·토벌전(이번주)은 mgf.gg 기준으로 <b>매시간 자동 갱신</b>됩니다 — 마지막 동기화 ${new Date(mine.updated_at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})} · 이름이 게임 표기와 같아야 반영돼요`
+      : '';
+  }
 }
 async function loadHistory(){
   const {data} = await sb.from('history').select('week_label,snapshot,created_at').order('created_at');
   if(data){
-    history = data.map(h=>({week_label:h.week_label,
-      total_tb: (h.snapshot||[]).reduce((s,m)=>s+(+m.tb_cur||0),0)}));
+    history = data;
     renderHistory();
+    if(!$('pane-history').hidden) renderHistoryPage();
   }
 }
 
@@ -577,11 +646,64 @@ async function liveFetch(name){
     box.innerHTML = '조회 실패 — 네트워크 또는 함수 오류입니다. 잠시 후 다시 시도해 주세요.';
   }
 }
+/* 다중 길드 비교 (쉼표 구분, 최대 5개) */
+const normName = s => s.replace(/\s+/g,'').toLowerCase();
+const findLocal = name => guilds.find(g => g.id===slugOf(name) || normName(g.label).includes(normName(name)));
+async function fetchGuildRaw(name){
+  try{
+    const {data, error} = await sb.functions.invoke('rapid-task', {body:{guild:name}});
+    if(error || !data) return null;
+    return data.ok ? data.guild : null;
+  }catch(e){ return null; }
+}
+async function runCompare(names){
+  const box = $('compareBox');
+  $('gnotfound').hidden = true;
+  box.hidden = false;
+  const results = [];
+  for(let i=0;i<names.length;i++){
+    box.innerHTML = `<div class="hint"><span class="spin"></span>${i+1}/${names.length} — ‘${esc(names[i])}’ 조회 중…</div>`;
+    let g = findLocal(names[i]);
+    if(!g) g = await fetchGuildRaw(names[i]);
+    results.push({name:names[i], g});
+  }
+  await loadGuilds();
+  const ok = results.filter(r=>r.g);
+  const fail = results.filter(r=>!r.g).map(r=>r.name);
+  if(!ok.length){
+    box.innerHTML = `<div class="hint">비교할 길드를 하나도 찾지 못했습니다 (${fail.map(esc).join(', ')}). 이름을 확인해 주세요.</div>`;
+    return;
+  }
+  const stat = g => {
+    const rows = g.rows||[];
+    return {n:rows.length,
+      pw: rows.reduce((s,r)=>s+(+r[3]||0),0),
+      tb: rows.reduce((s,r)=>s+(+r[4]||0),0)};
+  };
+  const stats = ok.map(r=>({label:r.g.label, server:r.g.server||'', ...stat(r.g)}));
+  stats.sort((a,b)=>b.pw-a.pw);
+  const totPw = stats.reduce((s,x)=>s+x.pw,0), totTb = stats.reduce((s,x)=>s+x.tb,0);
+  box.innerHTML =
+    `<div class="tblbox" style="margin-bottom:10px"><table>`+
+    '<thead><tr><th class="txt">길드</th><th class="txt">서버·순위</th><th>인원</th><th>전투력 합계(조)</th><th>1인 평균(조)</th><th>토벌전 합계(억)</th></tr></thead><tbody>'+
+    stats.map(s=>`<tr><td class="txt name">${esc(s.label)}</td><td class="txt mut">${esc(s.server)}</td><td>${s.n}명</td>`+
+      `<td><b>${fmt(Math.round(s.pw))}</b></td><td class="mut">${fmt(Math.round(s.pw/(s.n||1)))}</td><td>${fmt(Math.round(s.tb))}</td></tr>`).join('')+
+    `<tr style="font-weight:700;background:var(--surface2)"><td class="txt">합산 (${stats.length}개 길드)</td><td></td>`+
+    `<td>${stats.reduce((s,x)=>s+x.n,0)}명</td><td>${fmt(Math.round(totPw))}</td><td></td><td>${fmt(Math.round(totTb))}</td></tr>`+
+    '</tbody></table></div>'+
+    `<p class="meta">${fail.length?`찾지 못함: ${fail.map(esc).join(', ')} · `:''}개별 명단은 아래에서 길드를 선택해 보세요 <button class="btn ghost" id="cmpClose" style="padding:2px 10px;font-size:12px">비교 닫기</button></p>`;
+  $('cmpClose').onclick = ()=>{ box.hidden = true; box.innerHTML=''; };
+}
+
 function doGuildSearch(){
   const q = $('gq').value.trim();
   const box = $('gnotfound');
   if(!q){ box.hidden=true; return; }
-  const norm = s => s.replace(/\s+/g,'').toLowerCase();
+  if(q.includes(',')){
+    const names = [...new Set(q.split(',').map(s=>s.trim()).filter(Boolean))].slice(0,5);
+    if(names.length>1){ runCompare(names); return; }
+  }
+  const norm = normName;
   const hit = guilds.find(g => norm(g.label).includes(norm(q)));
   if(hit){ guildKey = hit.id; box.hidden = true; renderSearch(); return; }
   box.hidden = false;
@@ -600,9 +722,11 @@ $('chips').addEventListener('click', e=>{
 $('tabs').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on', x===b));
-  for(const p of ['manage','input','search']) $('pane-'+p).hidden = (b.dataset.pane!==p);
+  for(const p of ['manage','input','search','history','calc']) $('pane-'+p).hidden = (b.dataset.pane!==p);
   if(b.dataset.pane==='input') renderGrid();
   if(b.dataset.pane==='search') renderSearch();
+  if(b.dataset.pane==='history') renderHistoryPage();
+  if(b.dataset.pane==='calc') renderCalc();
 });
 $('seg').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
@@ -617,6 +741,117 @@ $('mtable').addEventListener('click', e=>{
   if(sortKey===k) sortDir = -sortDir;
   else { sortKey=k; sortDir = ['name','job','rank','totRank','rankSum','pwRank'].includes(k)?1:-1; }
   renderTable(compute(active()));
+});
+
+/* ══════════ 전투력 계산기 (넥슨 공식 가이드 가중치) ══════════ */
+const CALC_GROUPS = [
+  ['기본 능력치', [['atk','공격력',561470000],['hp','최대 HP',40241862],['def','방어력',78706],['mp','최대 MP',9900]]],
+  ['전투 (%)', [['crit','크리티컬 확률 %',107.4],['critd','크리티컬 데미지 %',208.8],['aspd','공격 속도 %',76.6],
+    ['dmg','데미지 %',818.2],['amp','데미지 증폭 %',55.1],['statp','스탯 비례 데미지 %',1587.2],['fin','최종 데미지 %',48.5]]],
+  ['대상별 데미지 (%)', [['boss','보스 몬스터 %',286.5],['norm','일반 몬스터 %',98.7],['ail','상태이상 %',114.5]]],
+  ['배율 · 명중', [['dmin','최소 데미지 배율 %',190.1],['dmax','최대 데미지 배율 %',300.7],['acc','명중',445],['eva','회피',276]]],
+  ['공격 구성', [['basic','기본 공격 데미지 %',117.1],['skill','스킬 데미지 %',64.6],['pierce','방어 관통력 %',76.3],['btgt','기본 공격 대상 수 증가',3]]],
+  ['스킬 레벨', [['sk1','1차 스킬 레벨',8],['sk2','2차 스킬 레벨',0],['sk3','3차 스킬 레벨',60],['sk4','4차 스킬 레벨',87],['skAll','모든 스킬 레벨',46]]],
+  ['지속시간 · 쿨타임', [['buffdur','버프 지속시간 %',32],['petdur','동료 소환 지속시간 %',28],['cdpct','쿨타임 감소 %',10],['cdsec','쿨타임 감소 (초)',0]]],
+  ['생존', [['dtaken','받는 피해 감소 %',18.9]]],
+  ['마스터리 (스탯창에 없음 — 동료 도감에서 확인)', [['mainM','메인 마스터리 습득 수',16],['subM','서브 마스터리 습득 수',0]]],
+];
+const CALC_DEF = {}; CALC_GROUPS.forEach(([,fs])=>fs.forEach(([k,,d])=>CALC_DEF[k]=d));
+let calc = {...CALC_DEF};
+try{ const s = JSON.parse(localStorage.getItem('cp-calc')||'null'); if(s) calc = {...CALC_DEF, ...s}; }catch(e){}
+let calcBase = null;
+try{ calcBase = JSON.parse(localStorage.getItem('cp-calc-base')||'null'); }catch(e){}
+
+function cpFactors(v){
+  const P = k => (v[k]||0)*10, R = k => (v[k]||0);
+  const F = [];
+  const base = R('atk')*3 + R('hp')*0.05 + R('def')*0.2;
+  const push = (label, x) => F.push([label, x]);
+  push('생존 규모 (HP·방어력·MP)', 1+(R('hp')+R('def')*20+(R('mp')-500)*10)/1e6);
+  push('데미지 %', 1+P('dmg')*700/1e6);
+  push('공격 속도', 1+P('aspd')*700/1e6);
+  push('크리티컬 (확률+데미지)', 1+(P('crit')*350+(P('critd')-300)*550)/1e6);
+  push('데미지 배율 (최소+최대)', 1+((P('dmax')-1000)*350+(P('dmin')-650)*350)/1e6);
+  push('명중 + 회피', 1+(R('acc')*4500+R('eva')*1000)/1e6);
+  push('대상별 (일반+보스)', 1+(P('norm')*350+P('boss')*350)/1e6);
+  push('상태이상 데미지', 1+P('ail')*350/1e6);
+  push('기본공격 + 스킬 데미지', 1+(P('skill')*200+P('basic')*500)/1e6);
+  push('방어 관통력', 1+P('pierce')*1000/1e6);
+  push('스킬 레벨 (1~4차+전체)', 1+(R('sk1')*500+R('sk2')*1000+R('sk3')*2500+R('sk4')*3500+R('skAll')*6000)/1e6);
+  push('버프 지속시간', 1+P('buffdur')*250/1e6);
+  push('동료 소환 지속시간', 1+P('petdur')*250/1e6);
+  push('쿨타임 감소 (%+초)', 1+(R('cdsec')*25+P('cdpct')*250)/1e6);
+  push('기본 공격 대상 수', 1+R('btgt')*30000/1e6);
+  push('받는 피해 감소', 1+P('dtaken')*200/1e6);
+  push('스탯 비례 데미지', 1+P('statp')*700/1e6);
+  push('최종 데미지', 1+P('fin')*700/1e6);
+  push('데미지 증폭', 1+P('amp')*700/1e6);
+  let mMul=1, m=R('mainM');
+  for(const n of [5,6,9,9]){ const t=Math.max(0,Math.min(m,n)); m-=t; mMul*=1+t*80000/1e6; }
+  push('메인 마스터리', mMul);
+  let sMul=1, s=R('subM');
+  for(const n of [2,4,6,10]){ const t=Math.max(0,Math.min(s,n)); s-=t; sMul*=1+t*25000/1e6; }
+  push('서브 마스터리', sMul);
+  return {base, factors:F, total: F.reduce((a,[,x])=>a*x, base)};
+}
+function fmtCP(x){
+  if(!(x>0)) return '0';
+  const gy = Math.floor(x/1e16), jo = Math.round((x-gy*1e16)/1e12);
+  if(gy>0) return `${fmt(gy)}경 ${fmt(jo)}조`;
+  return `${fmt(Math.round(x/1e12*10)/10)}조`;
+}
+function renderCalc(){
+  const box = $('calcInputs');
+  if(!box.dataset.built){
+    box.innerHTML = CALC_GROUPS.map(([g,fs])=>
+      `<div class="calcgroup"><h4>${g}</h4><div class="fields">`+
+      fs.map(([k,label])=>`<div class="inp"><label for="cc-${k}">${label}</label>`+
+        `<input id="cc-${k}" data-k="${k}" type="number" step="any" inputmode="decimal" value="${calc[k]}"></div>`).join('')+
+      '</div></div>').join('');
+    box.dataset.built = '1';
+    box.addEventListener('input', e=>{
+      const k = e.target.dataset.k; if(!k) return;
+      const v = parseFloat(e.target.value);
+      calc[k] = isFinite(v) ? v : 0;
+      try{ localStorage.setItem('cp-calc', JSON.stringify(calc)); }catch(err){}
+      updateCalc();
+    });
+  }
+  updateCalc();
+}
+function updateCalc(){
+  const r = cpFactors(calc);
+  $('calcCP').textContent = fmtCP(r.total);
+  $('calcCPraw').textContent = '기본치 ' + fmt(Math.round(r.base)) + ' × 배율 ' + fmt(Math.round(r.total/r.base*10)/10) + '배';
+  if(!calcBase){ calcBase = {...calc}; try{ localStorage.setItem('cp-calc-base', JSON.stringify(calcBase)); }catch(e){} }
+  const b = cpFactors(calcBase).total;
+  const d = b>0 ? (r.total/b-1)*100 : 0;
+  $('calcDelta').innerHTML = Math.abs(d)<0.005 ? '<span class="flat">±0%</span>'
+    : d>0 ? `<span class="up">▲ ${d.toFixed(2)}%</span>` : `<span class="down">▼ ${(-d).toFixed(2)}%</span>`;
+  const bf = cpFactors(calcBase);
+  const bmap = Object.fromEntries(bf.factors);
+  $('calcBreak').innerHTML =
+    '<thead><tr><th class="txt">그룹</th><th>배율</th><th>기준 대비 기여</th></tr></thead><tbody>'+
+    `<tr><td class="txt mut">기본치 (공격력×3 + HP×0.05 + 방어력×0.2)</td><td>${fmt(Math.round(r.base))}</td>`+
+    `<td>${bf.base>0&&Math.abs(r.base/bf.base-1)>0.00005?arrow((r.base/bf.base-1)*100,v=>v.toFixed(2)+'%'):'<span class="flat">–</span>'}</td></tr>`+
+    r.factors.map(([label,x])=>{
+      const bx = bmap[label]||1;
+      const dd = bx>0 ? (x/bx-1)*100 : 0;
+      return `<tr><td class="txt">${label}</td><td><b>× ${x.toFixed(3)}</b></td>`+
+        `<td>${Math.abs(dd)>0.005?arrow(dd,v=>v.toFixed(2)+'%'):'<span class="flat">–</span>'}</td></tr>`;
+    }).join('')+'</tbody>';
+}
+$('calcSetBase').addEventListener('click', ()=>{
+  calcBase = {...calc};
+  try{ localStorage.setItem('cp-calc-base', JSON.stringify(calcBase)); }catch(e){}
+  updateCalc();
+});
+$('calcReset').addEventListener('click', ()=>{
+  if(!confirm('입력값을 예시값으로 되돌릴까요?')) return;
+  calc = {...CALC_DEF};
+  try{ localStorage.setItem('cp-calc', JSON.stringify(calc)); }catch(e){}
+  document.querySelectorAll('#calcInputs input').forEach(i=>{ i.value = calc[i.dataset.k]; });
+  updateCalc();
 });
 
 /* ══════════ 실시간 · 접속자 ══════════ */

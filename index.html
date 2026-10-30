@@ -616,10 +616,10 @@ async function rpc(fn, args) {
 }
 
 /* ── 길드대항전 주간 점수 ── */
-// 한 주 = 월요일 0시(한국시간)부터. week 키 = 그 주 월요일 날짜
+// 한 주 = 화요일 0시(한국시간)부터 — 대항전이 월요일 22시에 끝나므로. week 키 = 그 주 화요일 날짜
 function weekKey(offset = 0) {
   const k = new Date(Date.now() + 9 * 3600e3); // KST 기준 날짜 계산용
-  const dow = (k.getUTCDay() + 6) % 7;         // 월=0
+  const dow = (k.getUTCDay() + 5) % 7;         // 화=0
   const mon = new Date(Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate() - dow + offset * 7));
   return mon.toISOString().slice(0, 10);
 }
@@ -940,7 +940,7 @@ function renderRoster(C) {
   $('rosterTbl').innerHTML = thead(key, cols, defSort) + '<tbody>' + (body || `<tr><td colspan="${cols.length}" class="empty">‘${esc(qv)}’와 일치하는 길드원이 없습니다</td></tr>`) + '</tbody>';
   $('rosterNote').innerHTML = view === 'tb'
     ? `4서버 등수는 mgf.gg 4서버 토벌전 랭킹의 구간 커트라인으로 판정합니다${S.server ? ` (${when(S.server.fetched_at)} 수집)` : ''}. 투력 대비 효율 = 토벌 점수 ÷ 전투력 구간별 기대 점수(보정 기준표).`
-    : (S.dhReady ? `점수는 억 단위 숫자나 "1조 2345억"처럼 입력하고 Enter를 누르거나 칸을 벗어나면 저장됩니다. 누구나 입력할 수 있고, 저장하면 지금 이 페이지를 보고 있는 모든 사람에게 바로 반영돼요. 매주 월요일 0시에 새 주로 넘어가며 이번 주 점수는 자동으로 '지난주'가 됩니다.` : '대항전 점수 저장 공간이 아직 준비되지 않았습니다 (관리자 설정 필요).');
+    : (S.dhReady ? `점수는 억 단위 숫자나 "1조 2345억"처럼 입력하고 Enter를 누르거나 칸을 벗어나면 저장됩니다. 누구나 입력할 수 있고, 저장하면 지금 이 페이지를 보고 있는 모든 사람에게 바로 반영돼요. 대항전이 끝난 뒤 화요일 0시에 새 주로 넘어가며, 이번 주 점수는 자동으로 '지난주'가 됩니다.` : '대항전 점수 저장 공간이 아직 준비되지 않았습니다 (관리자 설정 필요).');
   $('goneBox').innerHTML = gone.length ? `<div class="note" style="margin-top:14px"><b>탈퇴·이동 ${gone.length}명</b> (${when(prev.fetched_at)} 수집분에는 있었음): ${gone.map((m) => `${esc(m.n)} <span class="mute">${esc(m.j)} · 토벌 ${fmtEok(m.gb)}</span>`).join(', ')}</div>` : '';
 }
 function deltaTxt(v, f) { if (v == null) return '–'; if (Math.abs(v) < 0.5) return '<span class="mute">0</span>'; return `<span class="${v > 0 ? 'up' : 'down'}">${v > 0 ? '▲' : '▼'} ${f(Math.abs(v))}</span>`; }

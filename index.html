@@ -139,8 +139,9 @@ th.sort[data-dir]::after{content:'';display:inline-block;margin-left:4px;border:
 th.sort[data-dir="desc"]::after{border-top-color:currentColor;margin-bottom:-4px}
 th.sort[data-dir="asc"]::after{border-bottom-color:currentColor;margin-top:-4px}
 td.l,th.l{text-align:left}
-tbody tr:hover td{background:var(--panel2)}
-tr.me td{background:color-mix(in srgb,var(--brand) 5%,transparent)}
+tbody tr:nth-child(odd) td{background:color-mix(in srgb,var(--ink) 3.2%,var(--panel))}
+tbody tr:hover td{background:color-mix(in srgb,var(--brand) 7%,var(--panel))}
+tr.me td,tr.me:nth-child(odd) td{background:color-mix(in srgb,var(--brand) 8%,var(--panel))}
 tr.gone td{color:var(--mute);text-decoration:line-through;text-decoration-color:var(--line)}
 td .gname{display:inline-flex;align-items:center;gap:6px;font-weight:600}
 td .gname i{width:8px;height:8px;border-radius:3px}
@@ -221,6 +222,18 @@ details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--ink2)}
 .dh-in.saving{opacity:.6}
 tr.flash td{animation:flash 1.4s ease-out}
 @keyframes flash{from{background:color-mix(in srgb,var(--ok) 18%,transparent)}to{background:transparent}}
+td.nick .nsub{display:block;font-size:11.5px;font-weight:500;color:var(--mute);margin-top:1px}
+.chg{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:1.25}
+.chg small{font-size:11px}
+.actbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+.actbar .grow{flex:1}
+.actbar .dh-only{display:inline-flex;gap:8px}
+.actbar .dh-only[hidden]{display:none}
+label.btn{cursor:pointer}
+.diff{display:inline-block;font-size:11.5px;font-weight:700;border-radius:6px;padding:1px 7px;background:var(--line2);color:var(--ink2)}
+.diff.d-보통{background:var(--brand-soft);color:var(--brand)}
+.diff.d-어려움{background:var(--warn-soft);color:var(--warn)}
+.diff.d-카오스{background:var(--bad-soft);color:var(--bad)}
 /* content cards */
 .cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media (max-width:900px){.cgrid{grid-template-columns:1fr}}
@@ -276,6 +289,7 @@ footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
     <button class="tab" role="tab" data-tab="all" aria-selected="false">통합 순위</button>
     <button class="tab" role="tab" data-tab="server" aria-selected="false">4서버 토벌 랭킹</button>
     <button class="tab" role="tab" data-tab="content" aria-selected="false">길드컨텐츠 정보</button>
+    <button class="tab" role="tab" data-tab="boss" aria-selected="false">보스 정보</button>
     <button class="tab" role="tab" data-tab="admin" aria-selected="false">데이터 · 설정</button>
   </div>
 </nav>
@@ -311,7 +325,7 @@ footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
     </div>
 
     <div class="panel">
-      <div class="panel-h"><h2>길드별 지표</h2><span class="sub">토벌전 단위 억 · 전투력 단위 조</span></div>
+      <div class="panel-h"><h2>길드별 지표</h2><span class="sub">토벌전 단위 억 · 전투력 단위 조</span><span class="grow"></span><button class="btn" type="button" data-export="guildTbl" data-title="대항전_길드별지표">엑셀로 내보내기</button></div>
       <div class="panel-b" style="padding-top:12px"><div class="tbl"><table id="guildTbl"></table></div></div>
     </div>
   </section>
@@ -330,6 +344,11 @@ footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
         </div>
       </div>
       <div class="panel-b" style="padding-top:12px">
+        <div class="actbar" id="rosterActs">
+          <span class="grow"></span>
+          <span class="dh-only" hidden><button class="btn" type="button" id="dhTplBtn">입력 양식 받기</button><label class="btn" for="dhFile">엑셀 업로드</label><input type="file" id="dhFile" accept=".xlsx,.xls,.csv" hidden></span>
+          <button class="btn" type="button" data-export="rosterTbl" data-title="안전_길드원">엑셀로 내보내기</button>
+        </div>
         <div class="tbl"><table id="rosterTbl"></table></div>
         <p class="mute" id="rosterNote" style="font-size:12px;margin:10px 0 0"></p>
         <div id="goneBox"></div>
@@ -347,6 +366,7 @@ footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
         <div class="toolbar">
           <div class="seg" id="allSeg" role="group" aria-label="길드 필터"></div>
           <label class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="mute"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="allQ" placeholder="닉네임 검색" aria-label="닉네임 검색"></label>
+          <button class="btn" type="button" data-export="allTbl" data-title="대항전_통합순위">엑셀로 내보내기</button>
         </div>
       </div>
       <div class="panel-b" style="padding-top:12px"><div class="tbl"><table id="allTbl"></table></div></div>
@@ -358,7 +378,7 @@ footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
   <section id="tab-server" class="row" hidden>
     <dl class="kpis" id="srvKpis"></dl>
     <div class="panel">
-      <div class="panel-h"><h2>4서버 길드 토벌 합산 순위</h2><span class="sub" id="srvSub"></span></div>
+      <div class="panel-h"><h2>4서버 길드 토벌 합산 순위</h2><span class="sub" id="srvSub"></span><span class="grow"></span><button class="btn" type="button" data-export="srvTbl" data-title="4서버_토벌합산순위">엑셀로 내보내기</button></div>
       <div class="panel-b" style="padding-top:12px"><div class="tbl"><table id="srvTbl"></table></div>
         <p class="mute" style="font-size:12px;margin:10px 0 0">In10 = 4서버 1~10위, In30 = 11~30위, In50 = 31~50위, In70 = 51~70위, In100 = 71~100위에 든 길드원 수(겹치지 않음). 길드원 각자의 토벌 점수를 4서버 토벌전 랭킹 커트라인에 대 보고 등수 구간 점수를 매겨 길드별로 더했습니다. 대상은 mgf.gg 4서버 길드 랭킹(전투력순) 상위 20개 길드 + 안전입니다.</p></div>
     </div>
@@ -467,6 +487,88 @@ footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
     <p class="mute" style="font-size:12px;margin:0">‘운영 포인트’는 위 규칙을 바탕으로 한 공략 방향입니다. 실제 결과는 직업·세팅에 따라 다를 수 있어요.</p>
   </section>
 
+  <!-- ═════════ 보스 정보 ═════════ -->
+  <section id="tab-boss" class="row" hidden>
+    <div class="panel"><div class="panel-b">
+      <h2 style="margin:0 0 4px;font-size:17px;letter-spacing:-.02em">보스 레이드 핵심 정리</h2>
+      <p class="ink2" style="margin:0">보스마다 <b>구조(몸통·부위)</b> → <b>모드·제한</b> → <b>드랍</b> → <b>공략 포인트</b> 순서로 보면 됩니다. 드랍 확률은 일반 / 버닝UP 순서이며, 게임 버전 1.15.0 기준(핑크빈 길드레이드 1.17)이라 업데이트에 따라 달라질 수 있습니다.</p>
+    </div></div>
+
+    <article class="panel ccard">
+      <header><span class="ctag" style="--c:var(--g4)">공통</span><h3>보스레이드 플레이 모드</h3></header>
+      <div class="cols2">
+        <dl class="facts">
+          <div><dt>파티 모드</dt><dd>최대 4인 · 기존과 같은 방식</dd></div>
+          <div><dt>싱글 모드</dt><dd>1인 · 난이도별로 HP만 낮아지고 공격력·방어력·회피는 파티와 같음</dd></div>
+          <div><dt>드랍</dt><dd>드랍 품목·기본 확률은 두 모드가 같음. 싱글은 장비 <b>부옵션 개수</b>가 많이 붙을 확률이 올라감</dd></div>
+        </dl>
+        <p class="ctip" style="margin:0"><b>운영 포인트</b> 혼자 깰 수 있는 난이도라면 싱글이 장비 옵션 면에서 유리합니다. 파티는 클리어 자체가 버거운 상위 난이도를 깰 때 쓰는 편이 좋습니다.</p>
+      </div>
+    </article>
+
+    <div class="cgrid">
+      <article class="panel ccard">
+        <header><span class="ctag" style="--c:#C2410C">보스</span><h3>자쿰</h3><span class="sub">쉬움 · 보통 · 어려움 · 카오스</span></header>
+        <dl class="facts">
+          <div><dt>구조</dt><dd>몸통(메인 HP) + 팔 8개(부위 HP) · 공격력은 몸통·팔 공통</dd></div>
+          <div><dt>길드레이드</dt><dd>8인 · 몸통·팔 구조 동일, 사망 제한 있음</dd></div>
+        </dl>
+        <div class="tbl"><table class="mini"><thead><tr><th class="l">난이도</th><th class="l">아이템</th><th class="l">등급 (레벨)</th><th>확률 · 일반 / 버닝UP</th></tr></thead><tbody><tr><td class="l"><span class="diff d-쉬움">쉬움</span></td><td class="l"><b>자쿰의 투구</b></td><td class="l ink2">유니크 상급 (~80)</td><td class="num">9% / 18%</td></tr><tr><td class="l"><span class="diff d-쉬움">쉬움</span></td><td class="l"><b>아쿠아틱 레터 눈장식</b></td><td class="l ink2">유니크 상급 (~80)</td><td class="num">15% / 30%</td></tr><tr><td class="l"><span class="diff d-쉬움">쉬움</span></td><td class="l"><b>자쿰의 투구</b></td><td class="l ink2">유니크 최상급 (~95)</td><td class="num">1% / 2%</td></tr><tr><td class="l"><span class="diff d-보통">보통</span></td><td class="l"><b>자쿰의 투구</b></td><td class="l ink2">유니크 최상급 (~95)</td><td class="num">9% / 18%</td></tr><tr><td class="l"><span class="diff d-보통">보통</span></td><td class="l"><b>아쿠아틱 레터 눈장식</b></td><td class="l ink2">유니크 최상급 (~95)</td><td class="num">15% / 30%</td></tr><tr><td class="l"><span class="diff d-보통">보통</span></td><td class="l"><b>자쿰의 투구</b></td><td class="l ink2">레전더리 하급 (~110)</td><td class="num">1% / 2%</td></tr><tr><td class="l"><span class="diff d-어려움">어려움</span></td><td class="l"><b>자쿰의 투구</b></td><td class="l ink2">레전더리 하급 (~110)</td><td class="num">9% / 18%</td></tr><tr><td class="l"><span class="diff d-어려움">어려움</span></td><td class="l"><b>아쿠아틱 레터 눈장식</b></td><td class="l ink2">레전더리 하급 (~110)</td><td class="num">15% / 30%</td></tr><tr><td class="l"><span class="diff d-어려움">어려움</span></td><td class="l"><b>카오스 자쿰의 투구</b></td><td class="l ink2">레전더리 최상급 (~110)</td><td class="num">1% / 2%</td></tr><tr><td class="l"><span class="diff d-카오스">카오스</span></td><td class="l"><b>카오스 자쿰의 투구</b></td><td class="l ink2">레전더리 최상급 (~110)</td><td class="num">5% / 10%</td></tr><tr><td class="l"><span class="diff d-카오스">카오스</span></td><td class="l"><b>아쿠아틱 레터 눈장식</b></td><td class="l ink2">레전더리 중급 (~110)</td><td class="num">20% / 40%</td></tr></tbody></table></div>
+        <p class="ctip"><b>운영 포인트</b> 카오스부터 레전더리 최상급 투구가 5% / 10%로 크게 오르니, 버닝UP 기간에 카오스를 몰아 도는 것이 효율적입니다.</p>
+      </article>
+
+      <article class="panel ccard">
+        <header><span class="ctag" style="--c:#15803D">보스</span><h3>혼테일</h3><span class="sub">쉬움 · 보통 · 어려움 · 카오스</span></header>
+        <dl class="facts">
+          <div><dt>구조</dt><dd>메인 HP + 부위 8개 HP를 따로 깎는 구조</dd></div>
+          <div><dt>싱글 모드</dt><dd>쉬움~어려움만 HP 조정 · 카오스는 해당 없음</dd></div>
+          <div><dt>길드레이드</dt><dd>8인 · 메인·부위 분리, 사망 제한 있음</dd></div>
+        </dl>
+        <div class="tbl"><table class="mini"><thead><tr><th class="l">난이도</th><th class="l">아이템</th><th class="l">등급 (레벨)</th><th>확률 · 일반 / 버닝UP</th></tr></thead><tbody><tr><td class="l"><span class="diff d-쉬움">쉬움</span></td><td class="l"><b>데아 시두스 이어링</b></td><td class="l ink2">레전더리 중급 (~105)</td><td class="num">23% / 46%</td></tr><tr><td class="l"><span class="diff d-쉬움">쉬움</span></td><td class="l"><b>데아 시두스 이어링</b></td><td class="l ink2">레전더리 상급 (~115)</td><td class="num">2% / 4%</td></tr><tr><td class="l"><span class="diff d-보통">보통</span></td><td class="l"><b>데아 시두스 이어링</b></td><td class="l ink2">레전더리 상급 (~115)</td><td class="num">23% / 46%</td></tr><tr><td class="l"><span class="diff d-보통">보통</span></td><td class="l"><b>데아 시두스 이어링</b></td><td class="l ink2">레전더리 최상급 (~125)</td><td class="num">2% / 4%</td></tr><tr><td class="l"><span class="diff d-어려움">어려움</span></td><td class="l"><b>혼테일의 목걸이</b></td><td class="l ink2">레전더리+ 하급 (~125)</td><td class="num">9% / 18%</td></tr><tr><td class="l"><span class="diff d-어려움">어려움</span></td><td class="l"><b>데아 시두스 이어링</b></td><td class="l ink2">레전더리 최상급 (~125)</td><td class="num">15% / 30%</td></tr><tr><td class="l"><span class="diff d-어려움">어려움</span></td><td class="l"><b>카오스 혼테일의 목걸이</b></td><td class="l ink2">레전더리+ 중급 (~125)</td><td class="num">1% / 2%</td></tr><tr><td class="l"><span class="diff d-카오스">카오스</span></td><td class="l"><b>카오스 혼테일의 목걸이</b></td><td class="l ink2">레전더리+ 중급 (~125)</td><td class="num">5% / 10%</td></tr><tr><td class="l"><span class="diff d-카오스">카오스</span></td><td class="l"><b>데아 시두스 이어링</b></td><td class="l ink2">레전더리+ 하급 (125)</td><td class="num">20% / 40%</td></tr></tbody></table></div>
+        <p class="ctip"><b>운영 포인트</b> 데아 시두스 이어링은 쉬움·보통에서도 23% / 46%로 잘 나옵니다. 목걸이는 어려움부터 드랍되니 목표 아이템에 맞춰 난이도를 고르세요.</p>
+      </article>
+    </div>
+
+    <article class="panel ccard">
+      <header><span class="ctag" style="--c:#E0609A">보스</span><h3>핑크빈 (일반 보스레이드)</h3><span class="sub">쉬움 · 보통 · 어려움</span></header>
+      <div class="cols2">
+        <dl class="facts">
+          <div><dt>인원</dt><dd>파티 최대 4인 · 싱글 1인 · <b>동료 사용 불가</b></dd></div>
+          <div><dt>구성</dt><dd>본체 1기 + 석상 5기 · 공격력 공통</dd></div>
+          <div><dt>제한</dt><dd class="num">480초 · 사망 제한 파티 15회 / 싱글 8회</dd></div>
+          <div><dt>첫 기상</dt><dd>석상 최대 HP −20%로 시작</dd></div>
+          <div><dt>HP 예시</dt><dd class="num">어려움 파티 석상 기본 HP 1조 2,584억 (석상 HP 합계가 실제로 깎아야 하는 총량은 아님)</dd></div>
+        </dl>
+        <div class="tbl"><table class="mini"><thead><tr><th class="l">난이도</th><th class="l">아이템</th><th class="l">등급 (레벨)</th><th>확률 · 일반 / 버닝UP</th></tr></thead><tbody><tr><td class="l"><span class="diff d-쉬움">쉬움</span></td><td class="l"><b>핑크빛 성배</b></td><td class="l ink2">레전더리 상급 (~110)</td><td class="num">23% / 46%</td></tr><tr><td class="l"><span class="diff d-쉬움">쉬움</span></td><td class="l"><b>핑크빛 성배</b></td><td class="l ink2">레전더리+ 하급 (~120)</td><td class="num">2% / 4%</td></tr><tr><td class="l"><span class="diff d-보통">보통</span></td><td class="l"><b>핑크빛 성배</b></td><td class="l ink2">레전더리+ 하급 (~120)</td><td class="num">23% / 46%</td></tr><tr><td class="l"><span class="diff d-보통">보통</span></td><td class="l"><b>핑크빛 성배</b></td><td class="l ink2">레전더리+ 중급 (~130)</td><td class="num">2% / 4%</td></tr><tr><td class="l"><span class="diff d-어려움">어려움</span></td><td class="l"><b>핑크빛 성배</b></td><td class="l ink2">레전더리+ 중급 (~130)</td><td class="num">15% / 30%</td></tr><tr><td class="l"><span class="diff d-어려움">어려움</span></td><td class="l"><b>블랙빈 마크</b></td><td class="l ink2">레전더리+ 상급 (~130)</td><td class="num">9% / 18%</td></tr><tr><td class="l"><span class="diff d-어려움">어려움</span></td><td class="l"><b>카오스 핑크빈 마크</b></td><td class="l ink2">레전더리+ 최상급 (~130)</td><td class="num">1% / 2%</td></tr></tbody></table></div>
+      </div>
+      <p class="ctip"><b>운영 포인트</b> 동료를 못 쓰니 본인 세팅만으로 화력이 나와야 합니다. 사망 제한이 빡빡하니(싱글 8회) 생존 옵션도 챙기세요. 보통 이상을 깨야 핑크빈 길드레이드에 입장할 수 있습니다.</p>
+    </article>
+
+    <article class="panel ccard">
+      <header><span class="ctag" style="--c:#E0609A">레이드</span><h3>핑크빈 길드레이드 · 석상 패턴</h3><span class="sub">입장 조건·버프는 「길드컨텐츠 정보」 탭 참고</span></header>
+      <div class="cols2">
+        <div class="tbl"><table class="mini"><thead><tr><th class="l">석상</th><th class="l">패턴</th><th>쿨타임</th></tr></thead><tbody><tr><td class="l"><b>아리엘</b></td><td class="l">여러 위치에 지연 타격</td><td class="num ink2">9초</td></tr><tr><td class="l"><b>아리엘</b></td><td class="l">바닥에 지속 공격 영역</td><td class="num ink2">36초</td></tr><tr><td class="l"><b>아리엘</b></td><td class="l">지정 대상 강제 이동</td><td class="num ink2">39초</td></tr><tr><td class="l"><b>아리엘</b></td><td class="l">여러 지역 낙하 타격 + 기절</td><td class="num ink2">21초</td></tr><tr><td class="l"><b>솔로몬</b></td><td class="l">지정 대상 발판 연속 타격</td><td class="num ink2">3초</td></tr><tr><td class="l"><b>솔로몬</b></td><td class="l">최대 4명 발판 지연 타격</td><td class="num ink2">13초</td></tr><tr><td class="l"><b>솔로몬</b></td><td class="l">타격 후 버프 무작위 해제</td><td class="num ink2">21초</td></tr><tr><td class="l"><b>렉스</b></td><td class="l">지정 대상 발판 연속 타격</td><td class="num ink2">8초</td></tr><tr><td class="l"><b>렉스</b></td><td class="l">최대 4명 발판 지연 타격</td><td class="num ink2">3초</td></tr><tr><td class="l"><b>렉스</b></td><td class="l">타격 후 버프 무작위 해제</td><td class="num ink2">18초</td></tr><tr><td class="l"><b>휘긴</b></td><td class="l">몬스터 받는 피해 −35% (15초)</td><td class="num ink2">35초</td></tr><tr><td class="l"><b>휘긴</b></td><td class="l">여러 지역 낙하 타격 + 기절</td><td class="num ink2">22초</td></tr><tr><td class="l"><b>휘긴</b></td><td class="l">주변 사각형 범위 타격</td><td class="num ink2">2초</td></tr><tr><td class="l"><b>무닌</b></td><td class="l">이동속도 −35% · 점프 제한</td><td class="num ink2">25초</td></tr><tr><td class="l"><b>무닌</b></td><td class="l">여러 지역 낙하 타격 + 기절</td><td class="num ink2">22초</td></tr><tr><td class="l"><b>무닌</b></td><td class="l">주변 사각형 범위 타격</td><td class="num ink2">2초</td></tr></tbody></table></div>
+        <div>
+          <dl class="facts">
+            <div><dt>봉인 유지</dt><dd>봉인은 85초 뒤 풀리고 석상이 다시 일어남 · 봉인 버프 시간(30~80초)과는 별개</dd></div>
+            <div><dt>회복 디버프</dt><dd>피격마다 HP 회복력 −3%p (20초, 최대 30중첩) · 해제나 무닌 면역으로도 못 막음</dd></div>
+            <div><dt>훈장</dt><dd>핑크빈 슬레이어 훈장: 최종 데미지 +3%</dd></div>
+          </dl>
+          <p class="ctip" style="margin-top:12px"><b>운영 포인트</b> 여러 석상을 조금씩 깎아 두면 하나를 봉인할 때 나머지가 크게 회복돼 손해입니다. 한 번에 하나씩 확실히 봉인하세요. 솔로몬·렉스는 버프를 지우니 핵심 버프는 그 패턴 직후에 쓰고, 무닌의 이동 제한 중에는 낙하 타격 위치를 미리 피해 두는 게 좋습니다.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel ccard">
+      <header><span class="ctag" style="--c:var(--g3)">월드</span><h3>월드보스</h3></header>
+      <dl class="facts">
+        <div><dt>단계</dt><dd>1~20단계 · 단계가 오를수록 HP·공격력·방어력·회피 증가</dd></div>
+        <div><dt>20단계</dt><dd>HP 무제한 — 사실상 누적 피해 경쟁 구간</dd></div>
+      </dl>
+    </article>
+    <p class="mute" style="font-size:12px;margin:0">‘운영 포인트’는 위 수치를 바탕으로 한 공략 방향입니다. 실제 결과는 직업·세팅에 따라 다를 수 있어요.</p>
+  </section>
+
   <!-- ═════════ 데이터 · 설정 ═════════ -->
   <section id="tab-admin" class="row" hidden>
     <div class="grid2">
@@ -542,6 +644,7 @@ footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (() => {
 'use strict';
@@ -591,7 +694,7 @@ async function load() {
     const [settings, latest, homeHist, runs, reqs, srv, dh] = await Promise.all([
       q(sb.from('gvg_settings').select('lineup,score_table,updated_at').eq('id', 1).maybeSingle()),
       q(sb.from('gvg_latest').select('*')),
-      q(sb.from('gvg_snapshots').select('fetched_at,source_date,members').eq('guild', HOME).order('fetched_at', { ascending: false }).limit(12)),
+      q(sb.from('gvg_snapshots').select('fetched_at,source_date,members').eq('guild', HOME).gte('fetched_at', new Date(Date.now() - 17 * 864e5).toISOString()).order('fetched_at', { ascending: false }).limit(80)),
       q(sb.from('gvg_runs').select('*').order('finished_at', { ascending: false }).limit(8)),
       q(sb.from('gvg_requests').select('requested_at').eq('status', 'pending').order('requested_at').limit(1)).catch(() => []),
       q(sb.from('gvg_server').select('*').eq('server', 4).order('fetched_at', { ascending: false }).limit(1)).catch(() => []),
@@ -646,6 +749,72 @@ async function saveDh(name, raw, input) {
   if (error) { input.classList.add('bad'); toast('저장하지 못했습니다: ' + error.message); return; }
   v == null ? S.dh.cur.delete(name) : S.dh.cur.set(name, v);
   S.dhSaved = name; toast(`${name} 이번 주 대항전 점수를 저장했습니다`); render();
+}
+
+/* ── 길드토벌전 주간 (월 0시 ~ 일 24시 마감) ── */
+const isoDay = (d) => d.toISOString().slice(0, 10);
+function monOf(utcDate) { const dow = (utcDate.getUTCDay() + 6) % 7; return isoDay(new Date(Date.UTC(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate() - dow))); }
+function tbWeekKey(offset = 0) { const k = new Date(Date.now() + 9 * 3600e3); const m = monOf(k); const d = new Date(m + 'T00:00:00Z'); return isoDay(new Date(d.getTime() + offset * 7 * 864e5)); }
+/** 스냅샷이 어느 주 데이터인지: mgf.gg '기준 날짜' 우선, 없으면 수집 시각(한국시간) */
+function snapWeek(snap) {
+  const m = String(snap.source_date || '').match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/);
+  const d = m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : new Date(new Date(snap.fetched_at).getTime() + 9 * 3600e3);
+  return monOf(d);
+}
+function homeWeekSnaps() {
+  const cur = S.homeHist.find((h) => snapWeek(h) === tbWeekKey(0)) || null;
+  const prev = S.homeHist.find((h) => snapWeek(h) === tbWeekKey(-1)) || null;
+  return { cur, prev };
+}
+const tbWeekLabel = (key) => { const d = new Date(key + 'T00:00:00Z'); const e = new Date(d.getTime() + 6 * 864e5); return `${d.getUTCMonth() + 1}.${d.getUTCDate()}–${e.getUTCMonth() + 1}.${e.getUTCDate()}`; };
+
+/* ── 엑셀 내보내기 · 대항전 업로드 ── */
+function cellText(td) { const i = td.querySelector('input'); return (i ? i.value : td.innerText).replace(/\s+/g, ' ').trim(); }
+function exportTable(tableId, title) {
+  if (!window.XLSX) { toast('엑셀 도구를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요'); return; }
+  const t = $(tableId); if (!t) return;
+  const head = [...(t.querySelector('thead tr:last-child')?.children || [])].map((th) => th.innerText.replace(/\s+/g, ' ').trim());
+  const body = [...t.querySelectorAll('tbody tr')].filter((tr) => !tr.querySelector('.empty')).map((tr) => [...tr.children].map(cellText));
+  const ws = XLSX.utils.aoa_to_sheet([head, ...body]); ws['!cols'] = head.map((h, i) => ({ wch: Math.min(40, Math.max(8, ...[h, ...body.map((r) => r[i] || '')].map((v) => String(v).length * 1.6))) }));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, title.slice(0, 28));
+  const d = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
+  XLSX.writeFile(wb, `${title}_${d}.xlsx`);
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-export]'); if (!b) return;
+  exportTable(b.dataset.export, typeof b.dataset.title === 'string' ? b.dataset.title : '길드데이터');
+});
+function downloadDhTemplate() {
+  if (!window.XLSX) { toast('엑셀 도구를 불러오지 못했습니다'); return; }
+  const snap = S.latest.get(HOME); const names = (snap?.members || []).map((m) => [m.n, m.j, S.dh.cur.has(m.n) ? S.dh.cur.get(m.n) : '']);
+  const ws = XLSX.utils.aoa_to_sheet([['닉네임', '직업', '이번주 대항전 점수(억)'], ...names]);
+  ws['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 22 }];
+  const guide = XLSX.utils.aoa_to_sheet([['작성 방법'], ['1. "대항전 점수" 시트의 C열에 이번 주 대항전 점수를 적습니다.'], ['2. 억 단위 숫자(예: 12345) 또는 "1조 2345억"처럼 적어도 됩니다.'], ['3. 빈칸은 건너뛰고, 이미 저장된 점수는 그대로 둡니다.'], ['4. 저장한 뒤 길드 데이터 센터 → 안전 길드원 → 길드대항전 → 엑셀 업로드로 올립니다.'], [`대상 주간: ${weekLabel(weekKey(0))} (화요일 0시 ~ 월요일 대항전 종료)`]]);
+  guide['!cols'] = [{ wch: 70 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '대항전 점수'); XLSX.utils.book_append_sheet(wb, guide, '작성 방법');
+  XLSX.writeFile(wb, `길드대항전_입력양식_${weekKey(0)}.xlsx`);
+}
+async function uploadDh(file) {
+  if (!window.XLSX) { toast('엑셀 도구를 불러오지 못했습니다'); return; }
+  let aoa;
+  try {
+    const wb = XLSX.read(await file.arrayBuffer());
+    const ws = wb.Sheets[wb.SheetNames.includes('대항전 점수') ? '대항전 점수' : wb.SheetNames[0]];
+    aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+  } catch (e) { toast('엑셀 파일을 읽지 못했습니다'); return; }
+  const hi = aoa.findIndex((r) => r.some((c) => /닉네임|캐릭터/.test(String(c))));
+  if (hi < 0) { toast('"닉네임" 열을 찾지 못했습니다. 양식을 받아서 작성해 주세요'); return; }
+  const head = aoa[hi].map(String); const ni = head.findIndex((c) => /닉네임|캐릭터/.test(c)); const si = head.findIndex((c) => /대항|점수/.test(c) && !/닉네임|직업/.test(c));
+  if (si < 0) { toast('점수 열을 찾지 못했습니다'); return; }
+  const members = new Set((S.latest.get(HOME)?.members || []).map((m) => m.n));
+  const rows = [], bad = [], unknown = [];
+  aoa.slice(hi + 1).forEach((r) => { const n = String(r[ni] || '').trim(); const raw = String(r[si] ?? '').trim(); if (!n || !raw) return; const v = parseEok(raw); if (Number.isNaN(v)) { bad.push(n); return; } if (!members.has(n)) unknown.push(n); rows.push({ name: n, score: v }); });
+  if (!rows.length) { toast('올릴 점수가 없습니다 (점수 칸이 모두 비어 있음)'); return; }
+  if (window.__GVG_MOCK) { rows.forEach((r) => S.dh.cur.set(r.name, r.score)); render(); toast(`${rows.length}명 저장했습니다`); return; }
+  const { error } = await sb.rpc('gvg_dh_bulk', { p_week: weekKey(0), p_rows: rows });
+  if (error) { toast('업로드하지 못했습니다: ' + error.message); return; }
+  rows.forEach((r) => S.dh.cur.set(r.name, r.score)); render();
+  toast(`${rows.length}명 저장했습니다${unknown.length ? ` · 현재 길드원 아님: ${unknown.slice(0, 3).join(', ')}${unknown.length > 3 ? ' 외' : ''}` : ''}${bad.length ? ` · 숫자 오류: ${bad.slice(0, 3).join(', ')}` : ''}`);
 }
 
 /* ── 토벌 등수 구간 · 효율 ── */
@@ -876,27 +1045,32 @@ function renderRoster(C) {
   if (!snap) { $('rosterKpis').innerHTML = ''; $('rosterTbl').innerHTML = '<tbody><tr><td class="empty"><b>안전 길드 데이터가 아직 없습니다</b>첫 수집이 끝나면 길드원 목록이 표시됩니다.</td></tr></tbody>'; $('goneBox').innerHTML = ''; return; }
   const view = S.rosterView || 'tb';
   document.querySelectorAll('#rosterSeg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === view)));
+  document.querySelector('#rosterActs .dh-only').hidden = view !== 'dh';
+  document.querySelector('#rosterActs [data-export]').dataset.title = view === 'dh' ? '안전_길드대항전' : '안전_길드토벌전';
   const prev = homePrev();
   const prevMap = new Map((prev?.members || []).map((m) => [m.n, m]));
   const curNames = new Set(snap.members.map((m) => m.n));
   const byName = new Map(C.people.filter((p) => p.guild === HOME).map((p) => [p.n, p]));
   const inLineup = C.lineup.includes(HOME);
+  const wk = homeWeekSnaps();
+  const wkCur = new Map((wk.cur?.members || []).map((m) => [m.n, m.gb])), wkPrev = new Map((wk.prev?.members || []).map((m) => [m.n, m.gb]));
   const rows = snap.members.map((m, i) => {
     const p = byName.get(m.n); const pm = prevMap.get(m.n); const br = tbBracket(m.gb);
     return { ...m, idx: i + 1, rank: p?.rank ?? null, pts: p?.pts ?? null, isNew: prev && !pm, dgb: pm ? m.gb - pm.gb : null,
       tbLo: br?.lo ?? null, tbLabel: br?.label ?? '', tbPts: br ? br.pts : null, eff: effPct(m.gb, m.bp),
-      dhCur: S.dh.cur.has(m.n) ? S.dh.cur.get(m.n) : null, dhPrev: S.dh.prev.has(m.n) ? S.dh.prev.get(m.n) : null };
+      dhCur: S.dh.cur.has(m.n) ? S.dh.cur.get(m.n) : null, dhPrev: S.dh.prev.has(m.n) ? S.dh.prev.get(m.n) : null,
+      tbCur: wk.cur ? (wkCur.get(m.n) ?? null) : null, tbPrev: wk.prev ? (wkPrev.get(m.n) ?? null) : null };
   });
   const gone = prev ? prev.members.filter((m) => !curNames.has(m.n)) : [];
   const newbies = rows.filter((r) => r.isNew);
   const sum = (k) => rows.reduce((s, r) => s + (r[k] || 0), 0);
   const me = C.guilds.find((g) => g.name === HOME);
   const sv = C.server; const mineSv = sv && sv.ranked.find((g) => g.name === HOME);
-  $('rosterSub').textContent = `${snap.source_date} 기준 · ${ago(snap.fetched_at)} 수집${prev ? ` · 변동은 ${when(prev.fetched_at)} 수집분 대비` : ''}`;
+  $('rosterSub').textContent = `${snap.source_date} 기준 · ${ago(snap.fetched_at)} 수집${prev ? ` · 가입·탈퇴는 ${when(prev.fetched_at)} 수집분과 비교` : ''}`;
   const kpi1 = `<div class="kpi"><dt>길드원</dt><dd class="num">${rows.length}명</dd><small>${prev ? `가입 ${newbies.length} · 탈퇴 ${gone.length}` : '변동 비교는 두 번째 수집부터'}</small></div>`;
   if (view === 'tb') {
     $('rosterKpis').innerHTML = kpi1 + `
-    <div class="kpi"><dt>길드토벌전 점수 합계</dt><dd class="num">${fmtEok(sum('gb'))}</dd><small>${prev ? deltaTxt(sum('gb') - prev.members.filter((m) => curNames.has(m.n)).reduce((s, m) => s + m.gb, 0), fmtEok) + ' (잔류 인원 기준)' : '1인 평균 ' + fmtEok(sum('gb') / rows.length)}</small></div>
+    <div class="kpi"><dt>이번 주 토벌 합계</dt><dd class="num">${wk.cur ? fmtEok(sum('tbCur')) : '–'}</dd><small>${wk.cur && wk.prev ? deltaTxt(sum('tbCur') - sum('tbPrev'), fmtEok) + ` 지난주(${fmtEok(sum('tbPrev'))}) 대비` : wk.prev ? `지난주 ${fmtEok(sum('tbPrev'))} · 이번 주 데이터 대기` : `${tbWeekLabel(tbWeekKey(0))} · 지난주 기록은 첫 마감 후부터`}</small></div>
     <div class="kpi"><dt>4서버 토벌 환산 합계</dt><dd class="num">${S.server ? fmtPts(sum('tbPts')) : '–'}</dd><small>${mineSv ? `4서버 상위 길드 중 ${mineSv.place}위 / ${sv.ranked.length}` : '4서버 랭킹 수집 후 표시'}</small></div>
     <div class="kpi"><dt>투력 대비 토벌 효율</dt><dd class="num">${effTxt(effPct(sum('gb'), sum('bp'), true))}</dd><small>길드원 기대 점수 합 대비 · 100% = 기준선</small></div>`;
   } else {
@@ -912,25 +1086,24 @@ function renderRoster(C) {
   const qv = ($('rosterQ').value || '').trim().toLowerCase();
   const base = [{ t: '#', k: 'idx' }, { t: '닉네임', k: 'n', l: 1 }, { t: '직업', k: 'j', l: 1 }, { t: 'Lv', k: 'lv' }, { t: '전투력', k: 'bp' }];
   const cols = view === 'tb'
-    ? [...base, { t: '토벌 점수', k: 'gb' }, { t: '전일 대비', k: 'dgb' }, { t: '4서버 등수', k: 'tbLo', v: (r) => r.tbLo == null ? null : -r.tbLo }, { t: '토벌 환산점수', k: 'tbPts' }, { t: '투력 대비 효율', k: 'eff' }]
-    : [{ t: '#', k: 'idx' }, { t: '닉네임', k: 'n', l: 1 }, { t: '직업', k: 'j', l: 1 }, { t: '전투력', k: 'bp' }, { t: '지난주', k: 'dhPrev' }, { t: '이번 주 (입력)', k: 'dhCur' }, { t: '증감', k: 'dDh', v: (r) => r.dhCur != null && r.dhPrev != null ? r.dhCur - r.dhPrev : null }, { t: '증감률', k: 'dDhP', v: (r) => r.dhCur != null && r.dhPrev ? (r.dhCur - r.dhPrev) / r.dhPrev : null }, { t: '이번 주 순위', k: 'dhRank', v: (r) => r.dhRank == null ? null : -r.dhRank }];
+    ? [{ t: '#', k: 'idx' }, { t: '닉네임', k: 'n', l: 1 }, { t: '전투력', k: 'bp' }, { t: '지난주', k: 'tbPrev' }, { t: '이번 주', k: 'tbCur' }, { t: '증감', k: 'dTb', v: (r) => r.tbCur != null && r.tbPrev != null ? r.tbCur - r.tbPrev : null }, { t: '4서버 등수', k: 'tbLo', v: (r) => r.tbLo == null ? null : -r.tbLo }, { t: '환산점수', k: 'tbPts' }, { t: '투력 대비 효율', k: 'eff' }]
+    : [{ t: '#', k: 'idx' }, { t: '닉네임', k: 'n', l: 1 }, { t: '전투력', k: 'bp' }, { t: '지난주', k: 'dhPrev' }, { t: '이번 주 (입력)', k: 'dhCur' }, { t: '증감', k: 'dDh', v: (r) => r.dhCur != null && r.dhPrev != null ? r.dhCur - r.dhPrev : null }, { t: '이번 주 순위', k: 'dhRank', v: (r) => r.dhRank == null ? null : -r.dhRank }];
   if (view === 'dh') { const ord = rows.filter((r) => r.dhCur != null).sort((a, b) => b.dhCur - a.dhCur); ord.forEach((r, i) => { r.dhRank = i + 1; }); }
   const key = 'roster-' + view;
-  const defSort = view === 'dh' ? { k: 'dhCur', d: 'desc' } : { k: 'gb', d: 'desc' };
+  const defSort = view === 'dh' ? { k: 'dhCur', d: 'desc' } : { k: 'tbCur', d: 'desc' };
   const list = sortRows(key, rows.filter((r) => !qv || r.n.toLowerCase().includes(qv) || (r.j || '').toLowerCase().includes(qv)), cols, defSort);
-  const nick = (r) => `<td class="l nick"><a href="${charUrl(r.n)}" target="_blank" rel="noopener">${esc(r.n)}</a> ${r.m ? '<span class="badge gold">마스터</span>' : ''}${r.isNew ? '<span class="badge new">신규</span>' : ''}</td>`;
+  const nick = (r) => `<td class="l nick"><a href="${charUrl(r.n)}" target="_blank" rel="noopener">${esc(r.n)}</a> ${r.m ? '<span class="badge gold">마스터</span>' : ''}${r.isNew ? '<span class="badge new">신규</span>' : ''}<span class="nsub">${esc(r.j)}${r.lv ? ' · Lv.' + r.lv : ''}</span></td>`;
+  const chg = (cur, prv) => { if (cur == null || prv == null) return '<span class="mute">–</span>'; const d = cur - prv; return `<span class="chg">${deltaTxt(d, fmtEok)}${prv ? `<small class="${d > 0 ? 'up' : d < 0 ? 'down' : 'mute'}">${d > 0 ? '+' : ''}${(d / prv * 100).toFixed(1)}%</small>` : ''}</span>`; };
+  const ev = (v) => v != null ? fmtEok(v) : '<span class="mute">–</span>';
   const pill = (rk, txt) => `<span class="rankpill ${rk <= 10 ? 't10' : rk <= 30 ? 't30' : ''}">${txt}</span>`;
   const body = view === 'dh' ? list.map((r) => { const d = r.dhCur != null && r.dhPrev != null ? r.dhCur - r.dhPrev : null; return `<tr class="${S.dhSaved === r.n ? 'flash' : ''}">
-    <td class="num mute">${r.idx}</td>${nick(r)}<td class="l ink2">${esc(r.j)}</td><td class="num ink2">${fmtJo(r.bp)}</td>
-    <td class="num">${r.dhPrev != null ? fmtEok(r.dhPrev) : '<span class="mute">–</span>'}</td>
+    <td class="num mute">${r.idx}</td>${nick(r)}<td class="num ink2">${fmtJo(r.bp)}</td>
+    <td class="num">${ev(r.dhPrev)}</td>
     <td class="num"><input class="dh-in num" data-n="${esc(r.n)}" value="${r.dhCur != null ? esc(fmtEok(r.dhCur)) : ''}" placeholder="입력" inputmode="text" aria-label="${esc(r.n)} 이번 주 대항전 점수"></td>
-    <td class="num">${d == null ? '<span class="mute">–</span>' : deltaTxt(d, fmtEok)}</td>
-    <td class="num">${d == null || !r.dhPrev ? '<span class="mute">–</span>' : `<span class="${d > 0 ? 'up' : d < 0 ? 'down' : 'mute'}">${d > 0 ? '+' : ''}${(d / r.dhPrev * 100).toFixed(1)}%</span>`}</td>
+    <td class="num">${chg(r.dhCur, r.dhPrev)}</td>
     <td class="num">${r.dhRank ? pill(r.dhRank, r.dhRank + '위') : '<span class="mute">–</span>'}</td></tr>`; }).join('') : list.map((r) => `<tr>
-    <td class="num mute">${r.idx}</td>${nick(r)}
-    <td class="l ink2">${esc(r.j)}</td><td class="num">${r.lv ?? ''}</td><td class="num">${fmtJo(r.bp)}</td>
-    <td class="num"><b>${fmtEok(r.gb)}</b></td>` + (view === 'tb' ? `
-    <td class="num">${r.dgb == null ? '<span class="mute">–</span>' : deltaTxt(r.dgb, fmtEok)}</td>
+    <td class="num mute">${r.idx}</td>${nick(r)}<td class="num ink2">${fmtJo(r.bp)}</td>
+    <td class="num">${ev(r.tbPrev)}</td><td class="num"><b>${ev(r.tbCur)}</b></td><td class="num">${chg(r.tbCur, r.tbPrev)}</td>` + (view === 'tb' ? `
     <td class="num">${r.tbLo ? pill(r.tbLo, r.tbLabel) : `<span class="mute">${S.server ? '5,000위 밖' : '–'}</span>`}</td>
     <td class="num"><b>${r.tbPts != null ? fmtPts(r.tbPts) : '<span class="mute">–</span>'}</b></td>
     <td class="num">${effCell(r.eff)}</td>` : `
@@ -939,7 +1112,7 @@ function renderRoster(C) {
   S.dhSaved = null;
   $('rosterTbl').innerHTML = thead(key, cols, defSort) + '<tbody>' + (body || `<tr><td colspan="${cols.length}" class="empty">‘${esc(qv)}’와 일치하는 길드원이 없습니다</td></tr>`) + '</tbody>';
   $('rosterNote').innerHTML = view === 'tb'
-    ? `4서버 등수는 mgf.gg 4서버 토벌전 랭킹의 구간 커트라인으로 판정합니다${S.server ? ` (${when(S.server.fetched_at)} 수집)` : ''}. 투력 대비 효율 = 토벌 점수 ÷ 전투력 구간별 기대 점수(보정 기준표).`
+    ? `토벌전 주간은 월요일 0시 ~ 일요일 24시 마감입니다. 지난주는 마감 직전 마지막 기록, 이번 주는 최신 기록이며 증감은 그 차이입니다. 4서버 등수·환산점수·효율은 최신 기록 기준이고, 4서버 등수는 4서버 토벌전 랭킹의 구간 커트라인으로 판정합니다${S.server ? ` (${when(S.server.fetched_at)} 수집)` : ''}. 투력 대비 효율 = 토벌 점수 ÷ 전투력 구간별 기대 점수(보정 기준표).`
     : (S.dhReady ? `점수는 억 단위 숫자나 "1조 2345억"처럼 입력하고 Enter를 누르거나 칸을 벗어나면 저장됩니다. 누구나 입력할 수 있고, 저장하면 지금 이 페이지를 보고 있는 모든 사람에게 바로 반영돼요. 대항전이 끝난 뒤 화요일 0시에 새 주로 넘어가며, 이번 주 점수는 자동으로 '지난주'가 됩니다.` : '대항전 점수 저장 공간이 아직 준비되지 않았습니다 (관리자 설정 필요).');
   $('goneBox').innerHTML = gone.length ? `<div class="note" style="margin-top:14px"><b>탈퇴·이동 ${gone.length}명</b> (${when(prev.fetched_at)} 수집분에는 있었음): ${gone.map((m) => `${esc(m.n)} <span class="mute">${esc(m.j)} · 토벌 ${fmtEok(m.gb)}</span>`).join(', ')}</div>` : '';
 }
@@ -994,6 +1167,8 @@ $('allQ').addEventListener('input', () => render());
 $('rosterQ').addEventListener('input', () => render());
 $('rosterTbl').addEventListener('keydown', (e) => { const i = e.target.closest('.dh-in'); if (!i) return; if (e.key === 'Enter') { e.preventDefault(); i.blur(); } if (e.key === 'Escape') { i.value = S.dh.cur.has(i.dataset.n) ? fmtEok(S.dh.cur.get(i.dataset.n)) : ''; i.blur(); } });
 $('rosterTbl').addEventListener('focusout', (e) => { const i = e.target.closest('.dh-in'); if (!i) return; setTimeout(() => { saveDh(i.dataset.n, i.value, i); if (S._pendingRender) { S._pendingRender = false; render(); } }, 0); });
+$('dhTplBtn').addEventListener('click', downloadDhTemplate);
+$('dhFile').addEventListener('change', async (e) => { const f = e.target.files[0]; if (f) await uploadDh(f); e.target.value = ''; });
 $('rosterSeg').addEventListener('click', (e) => { const b = e.target.closest('button[data-v]'); if (!b) return; S.rosterView = b.dataset.v; render(); });
 
 /* ── admin ── */
@@ -1053,7 +1228,7 @@ function showTab(name) {
 }
 document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => showTab(t.dataset.tab)));
 document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => { showTab(b.dataset.goto); const f = b.dataset.focus && $(b.dataset.focus); if (f) setTimeout(() => f.focus(), 50); }));
-const h0 = location.hash.slice(1); if (['gvg', 'roster', 'all', 'server', 'content', 'admin'].includes(h0)) showTab(h0);
+const h0 = location.hash.slice(1); if (['gvg', 'roster', 'all', 'server', 'content', 'boss', 'admin'].includes(h0)) showTab(h0);
 
 setInterval(() => { if (!document.hidden) renderStatus(); }, 60000);
 load();

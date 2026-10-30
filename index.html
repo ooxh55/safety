@@ -354,7 +354,7 @@ footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
         <div class="panel-b">
           <form id="codeForm">
             <div class="field"><label for="codeOld">현재 코드</label><input class="input" id="codeOld" type="password" autocomplete="current-password"></div>
-            <div class="field"><label for="codeNew">새 코드 (6자 이상)</label><input class="input" id="codeNew" type="password" autocomplete="new-password" minlength="6"></div>
+            <div class="field"><label for="codeNew">새 코드 (4자 이상)</label><input class="input" id="codeNew" type="password" autocomplete="new-password" minlength="4"></div>
             <button class="btn" type="submit">코드 변경</button>
             <button class="btn" type="button" id="forgetCode">이 기기에서 코드 지우기</button>
           </form>
@@ -690,7 +690,7 @@ $('tableForm').addEventListener('submit', async (e) => {
 $('codeForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const old = $('codeOld').value, nw = $('codeNew').value;
-  if (nw.length < 6) { $('codeMsg').className = 'msg err'; $('codeMsg').textContent = '새 코드는 6자 이상이어야 합니다.'; return; }
+  if (nw.length < 4) { $('codeMsg').className = 'msg err'; $('codeMsg').textContent = '새 코드는 4자 이상이어야 합니다.'; return; }
   if (window.__GVG_MOCK) return;
   const { error } = await sb.rpc('gvg_set_code', { p_code: old, p_new: nw });
   $('codeMsg').className = 'msg ' + (error ? 'err' : 'ok');

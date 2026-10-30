@@ -150,6 +150,8 @@ tr.grp th{background:var(--panel);border-bottom:0;padding-bottom:4px;font-size:1
 tr.grp th span{font-weight:500;color:var(--mute);margin-left:4px}
 tr.grp th.g-tb{box-shadow:inset 0 -2px 0 var(--ink2)}
 tr.grp th.g-dh{box-shadow:inset 0 -2px 0 var(--brand);color:var(--brand)}
+td.band{min-width:52px}
+th[data-k^="b"]{min-width:52px}
 td.c-dh{background:color-mix(in srgb,var(--brand) 3.5%,transparent)}
 .rankpill{display:inline-block;min-width:34px;text-align:center;border-radius:7px;padding:1px 6px;font-weight:700;font-size:12.5px;background:var(--line2);color:var(--ink2)}
 .rankpill.t10{background:var(--gold-soft);color:var(--gold)}
@@ -211,6 +213,14 @@ details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--ink2)}
 .eff .trk u{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--mute);opacity:.6}
 .eff b{min-width:42px;text-align:right}
 .eff.hi{color:var(--ok)} .eff.mid{color:var(--ink2)} .eff.lo{color:var(--bad)}
+.dh-in{width:128px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:var(--panel);text-align:right;font-size:13.5px;font-weight:600}
+.dh-in:hover{border-color:color-mix(in srgb,var(--brand) 40%,var(--line))}
+.dh-in:focus{outline:2px solid color-mix(in srgb,var(--brand) 35%,transparent);border-color:var(--brand)}
+.dh-in::placeholder{color:var(--mute);font-weight:500}
+.dh-in.bad{border-color:var(--bad);background:var(--bad-soft)}
+.dh-in.saving{opacity:.6}
+tr.flash td{animation:flash 1.4s ease-out}
+@keyframes flash{from{background:color-mix(in srgb,var(--ok) 18%,transparent)}to{background:transparent}}
 /* content cards */
 .cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media (max-width:900px){.cgrid{grid-template-columns:1fr}}
@@ -350,7 +360,7 @@ footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
     <div class="panel">
       <div class="panel-h"><h2>4서버 길드 토벌 합산 순위</h2><span class="sub" id="srvSub"></span></div>
       <div class="panel-b" style="padding-top:12px"><div class="tbl"><table id="srvTbl"></table></div>
-        <p class="mute" style="font-size:12px;margin:10px 0 0">길드원 각자의 토벌 점수를 4서버 토벌전 랭킹 커트라인에 대 보고 등수 구간 점수를 매겨 길드별로 더했습니다. 대상은 mgf.gg 4서버 길드 랭킹(전투력순) 상위 20개 길드 + 안전입니다.</p></div>
+        <p class="mute" style="font-size:12px;margin:10px 0 0">In10 = 4서버 1~10위, In30 = 11~30위, In50 = 31~50위, In70 = 51~70위, In100 = 71~100위에 든 길드원 수(겹치지 않음). 길드원 각자의 토벌 점수를 4서버 토벌전 랭킹 커트라인에 대 보고 등수 구간 점수를 매겨 길드별로 더했습니다. 대상은 mgf.gg 4서버 길드 랭킹(전투력순) 상위 20개 길드 + 안전입니다.</p></div>
     </div>
     <div class="grid2">
       <div class="panel">
@@ -571,27 +581,28 @@ const guildUrl = (g) => 'https://mgf.gg/contents/guild_info.php?g_name=' + encod
 
 /* ── data layer ── */
 const sb = window.__GVG_MOCK ? null : (window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null);
-const S = { settings: null, latest: new Map(), homeHist: [], runs: [], error: null, filter: 'all', sorts: {} };
+const S = { dh: { cur: new Map(), prev: new Map() }, settings: null, latest: new Map(), homeHist: [], runs: [], error: null, filter: 'all', sorts: {} };
 
 async function q(builder) { const { data, error } = await builder; if (error) throw error; return data; }
 async function load() {
   try {
     if (window.__GVG_MOCK) { Object.assign(S, await window.__GVG_MOCK()); S.error = null; render(); return; }
     if (!sb) throw new Error('supabase 라이브러리를 불러오지 못했습니다');
-    const [settings, latest, homeHist, runs, reqs, srv] = await Promise.all([
+    const [settings, latest, homeHist, runs, reqs, srv, dh] = await Promise.all([
       q(sb.from('gvg_settings').select('lineup,score_table,updated_at').eq('id', 1).maybeSingle()),
       q(sb.from('gvg_latest').select('*')),
       q(sb.from('gvg_snapshots').select('fetched_at,source_date,members').eq('guild', HOME).order('fetched_at', { ascending: false }).limit(12)),
       q(sb.from('gvg_runs').select('*').order('finished_at', { ascending: false }).limit(8)),
       q(sb.from('gvg_requests').select('requested_at').eq('status', 'pending').order('requested_at').limit(1)).catch(() => []),
       q(sb.from('gvg_server').select('*').eq('server', 4).order('fetched_at', { ascending: false }).limit(1)).catch(() => []),
+      q(sb.from('gvg_dh_scores').select('week,name,score').in('week', [weekKey(0), weekKey(-1)])).catch(() => null),
     ]);
-    S.settings = settings; S.latest = new Map((latest || []).map((r) => [r.guild, r])); S.homeHist = homeHist || []; S.runs = runs || []; S.pending = (reqs && reqs[0] && reqs[0].requested_at) || null; S.server = (srv && srv[0]) || null; S.error = null;
+    S.settings = settings; S.latest = new Map((latest || []).map((r) => [r.guild, r])); S.homeHist = homeHist || []; S.runs = runs || []; S.pending = (reqs && reqs[0] && reqs[0].requested_at) || null; S.server = (srv && srv[0]) || null; S.dhReady = Array.isArray(dh); S.dh = { cur: new Map((dh || []).filter((r) => r.week === weekKey(0)).map((r) => [r.name, Number(r.score)])), prev: new Map((dh || []).filter((r) => r.week === weekKey(-1)).map((r) => [r.name, Number(r.score)])) }; S.error = null;
   } catch (e) { S.error = e; }
   render();
 }
 let reloadT; const reloadSoon = () => { clearTimeout(reloadT); reloadT = setTimeout(load, 600); };
-if (sb) { try { sb.channel('gvg').on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_snapshots' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_settings' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_requests' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_runs' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_server' }, reloadSoon).subscribe(); } catch (e) {} }
+if (sb) { try { sb.channel('gvg').on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_snapshots' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_settings' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_requests' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_runs' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_server' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_dh_scores' }, reloadSoon).subscribe(); } catch (e) {} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) reloadSoon(); });
 
 /* ── edit code ── */
@@ -602,6 +613,39 @@ async function rpc(fn, args) {
   const { data, error } = await sb.rpc(fn, { p_code: code, ...args });
   if (error) { if (/INVALID_CODE/.test(error.message)) { try { localStorage.removeItem('gvg-code'); } catch (e) {} return { error: '관리 코드가 맞지 않습니다. 다시 시도하면 코드를 다시 묻습니다.' }; } return { error: error.message }; }
   return { data };
+}
+
+/* ── 길드대항전 주간 점수 ── */
+// 한 주 = 월요일 0시(한국시간)부터. week 키 = 그 주 월요일 날짜
+function weekKey(offset = 0) {
+  const k = new Date(Date.now() + 9 * 3600e3); // KST 기준 날짜 계산용
+  const dow = (k.getUTCDay() + 6) % 7;         // 월=0
+  const mon = new Date(Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate() - dow + offset * 7));
+  return mon.toISOString().slice(0, 10);
+}
+const weekLabel = (key) => { const d = new Date(key + 'T00:00:00Z'); const e = new Date(d.getTime() + 6 * 864e5); return `${d.getUTCMonth() + 1}.${d.getUTCDate()}–${e.getUTCMonth() + 1}.${e.getUTCDate()}`; };
+/** "1조 2345억" / "12345" / "1.2조" → 억 단위 숫자 (빈 값 = null, 잘못된 값 = NaN) */
+function parseEok(str) {
+  const t = String(str ?? '').replace(/\s+/g, '').replace(/,/g, '');
+  if (!t) return null;
+  if (/^\d+(\.\d+)?$/.test(t)) return Number(t);
+  const u = { '경': 1e8, '조': 1e4, '억': 1, '만': 1e-4 }; let v = 0, rest = t;
+  for (const m of t.matchAll(/(\d+(?:\.\d+)?)(경|조|억|만)/g)) { v += Number(m[1]) * u[m[2]]; rest = rest.replace(m[0], ''); }
+  return rest ? NaN : Math.round(v * 100) / 100;
+}
+async function saveDh(name, raw, input) {
+  const v = parseEok(raw);
+  if (Number.isNaN(v)) { input.classList.add('bad'); toast('숫자(억 단위) 또는 "1조 2345억"처럼 입력해 주세요'); return; }
+  input.classList.remove('bad');
+  const week = weekKey(0); const before = S.dh.cur.get(name);
+  if ((before ?? null) === v) return;
+  input.classList.add('saving');
+  if (window.__GVG_MOCK) { v == null ? S.dh.cur.delete(name) : S.dh.cur.set(name, v); input.classList.remove('saving'); input.classList.add('saved'); render(); return; }
+  const { error } = await sb.rpc('gvg_dh_set', { p_week: week, p_name: name, p_score: v });
+  input.classList.remove('saving');
+  if (error) { input.classList.add('bad'); toast('저장하지 못했습니다: ' + error.message); return; }
+  v == null ? S.dh.cur.delete(name) : S.dh.cur.set(name, v);
+  S.dhSaved = name; toast(`${name} 이번 주 대항전 점수를 저장했습니다`); render();
 }
 
 /* ── 토벌 등수 구간 · 효율 ── */
@@ -649,8 +693,8 @@ function computeServer() {
     const snap = S.latest.get(name); if (!snap) return { name, ready: false };
     const ms = snap.members.map((m) => ({ ...m, br: tbBracket(m.gb) }));
     const pts = ms.reduce((s, m) => s + (m.br ? m.br.pts : 0), 0);
-    const cnt = (hi) => ms.filter((m) => m.br && m.br.hi <= hi).length;
-    return { name, ready: true, snap, cnt: ms.length, pts, gb: ms.reduce((s, m) => s + m.gb, 0), bp: ms.reduce((s, m) => s + m.bp, 0), eff: guildEff(ms), t10: cnt(10), t100: cnt(100), t500: cnt(500), out: ms.filter((m) => !m.br).length, mgfRank: (sv.guilds || []).indexOf(name) + 1 };
+    const band = (lo, hi) => ms.filter((m) => m.br && m.br.hi >= lo && m.br.hi <= hi).length;
+    return { name, ready: true, snap, cnt: ms.length, pts, gb: ms.reduce((s, m) => s + m.gb, 0), bp: ms.reduce((s, m) => s + m.bp, 0), eff: guildEff(ms), b10: band(1, 10), b30: band(11, 30), b50: band(31, 50), b70: band(51, 70), b100: band(71, 100), mgfRank: (sv.guilds || []).indexOf(name) + 1 };
   });
   const ranked = list.filter((g) => g.ready).sort((a, b) => b.pts - a.pts);
   ranked.forEach((g, i) => { g.place = i + 1; });
@@ -683,6 +727,8 @@ function compute() {
 
 /* ── render ── */
 function render() {
+  const ae = document.activeElement; if (ae && ae.classList && ae.classList.contains('dh-in') && S._renderedOnce) { S._pendingRender = true; return; }
+  S._renderedOnce = true;
   renderStatus();
   if (S.error) { renderError(); return; }
   const C = compute(); window.__gvgComputed = C;
@@ -838,7 +884,8 @@ function renderRoster(C) {
   const rows = snap.members.map((m, i) => {
     const p = byName.get(m.n); const pm = prevMap.get(m.n); const br = tbBracket(m.gb);
     return { ...m, idx: i + 1, rank: p?.rank ?? null, pts: p?.pts ?? null, isNew: prev && !pm, dgb: pm ? m.gb - pm.gb : null,
-      tbLo: br?.lo ?? null, tbLabel: br?.label ?? '', tbPts: br ? br.pts : null, eff: effPct(m.gb, m.bp) };
+      tbLo: br?.lo ?? null, tbLabel: br?.label ?? '', tbPts: br ? br.pts : null, eff: effPct(m.gb, m.bp),
+      dhCur: S.dh.cur.has(m.n) ? S.dh.cur.get(m.n) : null, dhPrev: S.dh.prev.has(m.n) ? S.dh.prev.get(m.n) : null };
   });
   const gone = prev ? prev.members.filter((m) => !curNames.has(m.n)) : [];
   const newbies = rows.filter((r) => r.isNew);
@@ -853,21 +900,33 @@ function renderRoster(C) {
     <div class="kpi"><dt>4서버 토벌 환산 합계</dt><dd class="num">${S.server ? fmtPts(sum('tbPts')) : '–'}</dd><small>${mineSv ? `4서버 상위 길드 중 ${mineSv.place}위 / ${sv.ranked.length}` : '4서버 랭킹 수집 후 표시'}</small></div>
     <div class="kpi"><dt>투력 대비 토벌 효율</dt><dd class="num">${effTxt(effPct(sum('gb'), sum('bp'), true))}</dd><small>길드원 기대 점수 합 대비 · 100% = 기준선</small></div>`;
   } else {
-    $('rosterKpis').innerHTML = kpi1 + `
-    <div class="kpi"><dt>길드대항전 예상 점수</dt><dd class="num">${inLineup && me?.ready ? fmtPts(me.pts) : '–'}</dd><small>${inLineup && me?.ready ? `예상 ${me.place}위 / ${C.ranked.length}` : '라인업에 안전 없음'}</small></div>
-    <div class="kpi"><dt>라인업 통합 상위 30등 안</dt><dd class="num">${rows.filter((r) => r.rank && r.rank <= 30).length}명</dd><small>대항전 라인업 ${C.people.length}명 기준</small></div>
-    <div class="kpi"><dt>최고 등수</dt><dd class="num">${me?.best ? me.best + '등' : '–'}</dd><small>${esc(me?.top?.[0]?.n || '')}</small></div>`;
+    const curSum = rows.reduce((s, r) => s + (r.dhCur || 0), 0), prevSum = rows.reduce((s, r) => s + (r.dhPrev || 0), 0);
+    const filled = rows.filter((r) => r.dhCur != null).length;
+    const best = [...rows].filter((r) => r.dhCur != null).sort((a, b) => b.dhCur - a.dhCur)[0];
+    $('rosterKpis').innerHTML = `
+    <div class="kpi"><dt>이번 주 입력 현황</dt><dd class="num">${filled} / ${rows.length}명</dd><small>${weekLabel(weekKey(0))} · 누구나 입력 가능</small></div>
+    <div class="kpi"><dt>이번 주 대항전 합계</dt><dd class="num">${filled ? fmtEok(curSum) : '–'}</dd><small>${prevSum && filled ? deltaTxt(curSum - prevSum, fmtEok) + ' 지난주 대비' : '지난주 기록 없음'}</small></div>
+    <div class="kpi"><dt>지난주 대항전 합계</dt><dd class="num">${prevSum ? fmtEok(prevSum) : '–'}</dd><small>${weekLabel(weekKey(-1))}</small></div>
+    <div class="kpi"><dt>이번 주 1위</dt><dd class="num" style="font-size:19px">${best ? esc(best.n) : '–'}</dd><small>${best ? fmtEok(best.dhCur) : ''}</small></div>`;
   }
   const qv = ($('rosterQ').value || '').trim().toLowerCase();
   const base = [{ t: '#', k: 'idx' }, { t: '닉네임', k: 'n', l: 1 }, { t: '직업', k: 'j', l: 1 }, { t: 'Lv', k: 'lv' }, { t: '전투력', k: 'bp' }];
   const cols = view === 'tb'
     ? [...base, { t: '토벌 점수', k: 'gb' }, { t: '전일 대비', k: 'dgb' }, { t: '4서버 등수', k: 'tbLo', v: (r) => r.tbLo == null ? null : -r.tbLo }, { t: '토벌 환산점수', k: 'tbPts' }, { t: '투력 대비 효율', k: 'eff' }]
-    : [...base, { t: '토벌 점수', k: 'gb' }, { t: '대항전 예상 등수', k: 'rank', v: (r) => r.rank == null ? null : -r.rank }, { t: '대항전 예상 점수', k: 'pts' }];
+    : [{ t: '#', k: 'idx' }, { t: '닉네임', k: 'n', l: 1 }, { t: '직업', k: 'j', l: 1 }, { t: '전투력', k: 'bp' }, { t: '지난주', k: 'dhPrev' }, { t: '이번 주 (입력)', k: 'dhCur' }, { t: '증감', k: 'dDh', v: (r) => r.dhCur != null && r.dhPrev != null ? r.dhCur - r.dhPrev : null }, { t: '증감률', k: 'dDhP', v: (r) => r.dhCur != null && r.dhPrev ? (r.dhCur - r.dhPrev) / r.dhPrev : null }, { t: '이번 주 순위', k: 'dhRank', v: (r) => r.dhRank == null ? null : -r.dhRank }];
+  if (view === 'dh') { const ord = rows.filter((r) => r.dhCur != null).sort((a, b) => b.dhCur - a.dhCur); ord.forEach((r, i) => { r.dhRank = i + 1; }); }
   const key = 'roster-' + view;
-  const list = sortRows(key, rows.filter((r) => !qv || r.n.toLowerCase().includes(qv) || (r.j || '').toLowerCase().includes(qv)), cols, { k: 'gb', d: 'desc' });
+  const defSort = view === 'dh' ? { k: 'dhCur', d: 'desc' } : { k: 'gb', d: 'desc' };
+  const list = sortRows(key, rows.filter((r) => !qv || r.n.toLowerCase().includes(qv) || (r.j || '').toLowerCase().includes(qv)), cols, defSort);
   const nick = (r) => `<td class="l nick"><a href="${charUrl(r.n)}" target="_blank" rel="noopener">${esc(r.n)}</a> ${r.m ? '<span class="badge gold">마스터</span>' : ''}${r.isNew ? '<span class="badge new">신규</span>' : ''}</td>`;
   const pill = (rk, txt) => `<span class="rankpill ${rk <= 10 ? 't10' : rk <= 30 ? 't30' : ''}">${txt}</span>`;
-  const body = list.map((r) => `<tr>
+  const body = view === 'dh' ? list.map((r) => { const d = r.dhCur != null && r.dhPrev != null ? r.dhCur - r.dhPrev : null; return `<tr class="${S.dhSaved === r.n ? 'flash' : ''}">
+    <td class="num mute">${r.idx}</td>${nick(r)}<td class="l ink2">${esc(r.j)}</td><td class="num ink2">${fmtJo(r.bp)}</td>
+    <td class="num">${r.dhPrev != null ? fmtEok(r.dhPrev) : '<span class="mute">–</span>'}</td>
+    <td class="num"><input class="dh-in num" data-n="${esc(r.n)}" value="${r.dhCur != null ? esc(fmtEok(r.dhCur)) : ''}" placeholder="입력" inputmode="text" aria-label="${esc(r.n)} 이번 주 대항전 점수"></td>
+    <td class="num">${d == null ? '<span class="mute">–</span>' : deltaTxt(d, fmtEok)}</td>
+    <td class="num">${d == null || !r.dhPrev ? '<span class="mute">–</span>' : `<span class="${d > 0 ? 'up' : d < 0 ? 'down' : 'mute'}">${d > 0 ? '+' : ''}${(d / r.dhPrev * 100).toFixed(1)}%</span>`}</td>
+    <td class="num">${r.dhRank ? pill(r.dhRank, r.dhRank + '위') : '<span class="mute">–</span>'}</td></tr>`; }).join('') : list.map((r) => `<tr>
     <td class="num mute">${r.idx}</td>${nick(r)}
     <td class="l ink2">${esc(r.j)}</td><td class="num">${r.lv ?? ''}</td><td class="num">${fmtJo(r.bp)}</td>
     <td class="num"><b>${fmtEok(r.gb)}</b></td>` + (view === 'tb' ? `
@@ -877,10 +936,11 @@ function renderRoster(C) {
     <td class="num">${effCell(r.eff)}</td>` : `
     <td class="num">${r.rank ? pill(r.rank, r.rank + '등') : '<span class="mute">–</span>'}</td>
     <td class="num"><b>${r.pts != null ? fmtPts(r.pts) : '<span class="mute">–</span>'}</b></td>`) + '</tr>').join('');
-  $('rosterTbl').innerHTML = thead(key, cols, { k: 'gb', d: 'desc' }) + '<tbody>' + (body || `<tr><td colspan="${cols.length}" class="empty">‘${esc(qv)}’와 일치하는 길드원이 없습니다</td></tr>`) + '</tbody>';
+  S.dhSaved = null;
+  $('rosterTbl').innerHTML = thead(key, cols, defSort) + '<tbody>' + (body || `<tr><td colspan="${cols.length}" class="empty">‘${esc(qv)}’와 일치하는 길드원이 없습니다</td></tr>`) + '</tbody>';
   $('rosterNote').innerHTML = view === 'tb'
     ? `4서버 등수는 mgf.gg 4서버 토벌전 랭킹의 구간 커트라인으로 판정합니다${S.server ? ` (${when(S.server.fetched_at)} 수집)` : ''}. 투력 대비 효율 = 토벌 점수 ÷ 전투력 구간별 기대 점수(보정 기준표).`
-    : `대항전 예상은 라인업 ${C.lineup.length}개 길드 전원을 토벌 점수로 줄 세운 뒤 대항전 환산표를 적용한 값입니다.`;
+    : (S.dhReady ? `점수는 억 단위 숫자나 "1조 2345억"처럼 입력하고 Enter를 누르거나 칸을 벗어나면 저장됩니다. 누구나 입력할 수 있고, 저장하면 지금 이 페이지를 보고 있는 모든 사람에게 바로 반영돼요. 매주 월요일 0시에 새 주로 넘어가며 이번 주 점수는 자동으로 '지난주'가 됩니다.` : '대항전 점수 저장 공간이 아직 준비되지 않았습니다 (관리자 설정 필요).');
   $('goneBox').innerHTML = gone.length ? `<div class="note" style="margin-top:14px"><b>탈퇴·이동 ${gone.length}명</b> (${when(prev.fetched_at)} 수집분에는 있었음): ${gone.map((m) => `${esc(m.n)} <span class="mute">${esc(m.j)} · 토벌 ${fmtEok(m.gb)}</span>`).join(', ')}</div>` : '';
 }
 function deltaTxt(v, f) { if (v == null) return '–'; if (Math.abs(v) < 0.5) return '<span class="mute">0</span>'; return `<span class="${v > 0 ? 'up' : 'down'}">${v > 0 ? '▲' : '▼'} ${f(Math.abs(v))}</span>`; }
@@ -895,13 +955,13 @@ function renderServer(C) {
     <div class="kpi"><dt>안전 토벌 환산 합계</dt><dd class="num">${me ? fmtPts(me.pts) : '–'}</dd><small>${me && above ? `${above.place}위 ${esc(above.name)}까지 ${fmtPts(above.pts - me.pts)}점` : me && me.place === 1 ? '4서버 1위' : ''}</small></div>
     <div class="kpi"><dt>투력 대비 효율</dt><dd class="num">${me ? effTxt(me.eff) : '–'}</dd><small>${me ? `4서버 상위 길드 중 ${[...sv.ranked].sort((a, b) => (b.eff || 0) - (a.eff || 0)).findIndex((g) => g.name === HOME) + 1}위` : ''}</small></div>
     <div class="kpi"><dt>1위 길드</dt><dd class="num" style="font-size:19px">${esc(top?.name || '–')}</dd><small>${top ? fmtPts(top.pts) + '점' : ''}</small></div>`;
-  const cols = [{ t: '순위', k: 'place', v: (g) => -g.place }, { t: '길드', k: 'name', l: 1 }, { t: '인원', k: 'cnt' }, { t: '토벌 환산 합계', k: 'pts' }, { t: '1인 평균', k: 'avg', v: (g) => g.pts / g.cnt }, { t: '토벌 점수 합계', k: 'gb' }, { t: '전투력 합계', k: 'bp' }, { t: '투력 대비 효율', k: 'eff' }, { t: '10위 안', k: 't10' }, { t: '100위 안', k: 't100' }, { t: '500위 안', k: 't500' }, { t: '5천위 밖', k: 'out' }];
+  const cols = [{ t: '순위', k: 'place', v: (g) => -g.place }, { t: '길드', k: 'name', l: 1 }, { t: '인원', k: 'cnt' }, { t: '토벌 환산 합계', k: 'pts' }, { t: '1인 평균', k: 'avg', v: (g) => g.pts / g.cnt }, { t: '토벌 점수 합계', k: 'gb' }, { t: '전투력 합계', k: 'bp' }, { t: '투력 대비 효율', k: 'eff' }, { t: 'In10', k: 'b10' }, { t: 'In30', k: 'b30' }, { t: 'In50', k: 'b50' }, { t: 'In70', k: 'b70' }, { t: 'In100', k: 'b100' }];
   const rows = sortRows('srv', sv.ranked, cols, { k: 'place', d: 'desc' });
   $('srvTbl').innerHTML = thead('srv', cols, { k: 'place', d: 'desc' }) + '<tbody>' + rows.map((g) => `<tr class="${g.name === HOME ? 'me' : ''}">
     <td class="num">${g.place}</td><td class="l"><a href="${guildUrl(g.name)}" target="_blank" rel="noopener" style="color:inherit;font-weight:600">${esc(g.name)}</a>${g.name === HOME ? ' <span class="badge new">우리</span>' : ''}</td>
     <td class="num">${g.cnt}</td><td class="num"><b>${fmtPts(g.pts)}</b></td><td class="num ink2">${fmtPts(g.pts / g.cnt)}</td>
     <td class="num">${fmtEok(g.gb)}</td><td class="num ink2">${fmtJo(g.bp)}</td><td class="num">${effCell(g.eff)}</td>
-    <td class="num">${g.t10 || '<span class="mute">0</span>'}</td><td class="num">${g.t100}</td><td class="num">${g.t500}</td><td class="num mute">${g.out}</td></tr>`).join('')
+    ${['b10', 'b30', 'b50', 'b70', 'b100'].map((k) => `<td class="num band">${g[k] ? `<b>${g[k]}</b>` : '<span class="mute">0</span>'}</td>`).join('')}</tr>`).join('')
     + sv.pending.map((g) => `<tr><td class="num mute">–</td><td class="l">${esc(g.name)} <span class="badge warn">수집 대기</span></td><td colspan="10" class="l mute">다음 갱신 때 길드 페이지를 읽어 옵니다</td></tr>`).join('') + '</tbody>';
   const cut = new Map((S.server.boundaries || []).map((b) => [b.rank, b]));
   let prevHi = 0;
@@ -932,6 +992,8 @@ function renderAll(C) {
 $('allSeg').addEventListener('click', (e) => { const b = e.target.closest('button[data-f]'); if (!b) return; S.filter = b.dataset.f; render(); });
 $('allQ').addEventListener('input', () => render());
 $('rosterQ').addEventListener('input', () => render());
+$('rosterTbl').addEventListener('keydown', (e) => { const i = e.target.closest('.dh-in'); if (!i) return; if (e.key === 'Enter') { e.preventDefault(); i.blur(); } if (e.key === 'Escape') { i.value = S.dh.cur.has(i.dataset.n) ? fmtEok(S.dh.cur.get(i.dataset.n)) : ''; i.blur(); } });
+$('rosterTbl').addEventListener('focusout', (e) => { const i = e.target.closest('.dh-in'); if (!i) return; setTimeout(() => { saveDh(i.dataset.n, i.value, i); if (S._pendingRender) { S._pendingRender = false; render(); } }, 0); });
 $('rosterSeg').addEventListener('click', (e) => { const b = e.target.closest('button[data-v]'); if (!b) return; S.rosterView = b.dataset.v; render(); });
 
 /* ── admin ── */

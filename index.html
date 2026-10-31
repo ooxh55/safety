@@ -286,7 +286,8 @@ footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
   <div class="wrap" role="tablist">
     <button class="tab" role="tab" data-tab="gvg" aria-selected="true">대항전 예측</button>
     <button class="tab" role="tab" data-tab="roster" aria-selected="false">안전 길드원</button>
-    <button class="tab" role="tab" data-tab="all" aria-selected="false">통합 순위</button>
+    <button class="tab" role="tab" data-tab="all" aria-selected="false">통합 순위 (예측)</button>
+    <button class="tab" role="tab" data-tab="war" aria-selected="false">실제 순위</button>
     <button class="tab" role="tab" data-tab="server" aria-selected="false">4서버 토벌 랭킹</button>
     <button class="tab" role="tab" data-tab="content" aria-selected="false">길드컨텐츠 정보</button>
     <button class="tab" role="tab" data-tab="boss" aria-selected="false">보스 정보</button>
@@ -373,6 +374,40 @@ footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between}
     </div>
   </section>
 
+
+  <!-- ═════════ 실제 순위 (대항전 실측) ═════════ -->
+  <section id="tab-war" class="row" hidden>
+    <dl class="kpis" id="warKpis"></dl>
+    <div class="hero">
+      <div class="panel">
+        <div class="panel-h">
+          <h2>대항전 실제 순위</h2><span class="sub" id="warSub"></span>
+          <span class="grow"></span>
+          <button class="btn" type="button" id="warTplBtn">입력 양식 받기</button>
+          <label class="btn" for="warFile">엑셀 업로드</label><input type="file" id="warFile" accept=".xlsx,.xls,.csv" hidden>
+        </div>
+        <ol class="board" id="warBoard"></ol>
+      </div>
+      <div class="panel focus">
+        <div class="panel-h"><h2>안전 길드</h2><span class="sub" id="warFocusSub"></span></div>
+        <div class="panel-b" id="warFocus"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-h">
+        <h2>길드원 점수</h2><span class="sub" id="warListSub"></span>
+        <span class="grow"></span>
+        <div class="toolbar">
+          <div class="seg" id="warSeg" role="group" aria-label="길드 필터"></div>
+          <label class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="mute"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="warQ" placeholder="닉네임 검색" aria-label="닉네임 검색"></label>
+          <button class="btn" type="button" data-export="warTbl" data-title="대항전_실제순위">엑셀로 내보내기</button>
+        </div>
+      </div>
+      <div class="panel-b" style="padding-top:12px"><div class="tbl"><table id="warTbl"></table></div>
+        <p class="mute" id="warNote" style="font-size:12px;margin:10px 0 0"></p>
+      </div>
+    </div>
+  </section>
 
   <!-- ═════════ 4서버 토벌 랭킹 ═════════ -->
   <section id="tab-server" class="row" hidden>
@@ -691,7 +726,7 @@ async function load() {
   try {
     if (window.__GVG_MOCK) { Object.assign(S, await window.__GVG_MOCK()); S.error = null; render(); return; }
     if (!sb) throw new Error('supabase 라이브러리를 불러오지 못했습니다');
-    const [settings, latest, homeHist, runs, reqs, srv, dh] = await Promise.all([
+    const [settings, latest, homeHist, runs, reqs, srv, dh, war] = await Promise.all([
       q(sb.from('gvg_settings').select('lineup,score_table,updated_at').eq('id', 1).maybeSingle()),
       q(sb.from('gvg_latest').select('*')),
       q(sb.from('gvg_snapshots').select('fetched_at,source_date,members').eq('guild', HOME).gte('fetched_at', new Date(Date.now() - 17 * 864e5).toISOString()).order('fetched_at', { ascending: false }).limit(80)),
@@ -699,13 +734,14 @@ async function load() {
       q(sb.from('gvg_requests').select('requested_at').eq('status', 'pending').order('requested_at').limit(1)).catch(() => []),
       q(sb.from('gvg_server').select('*').eq('server', 4).order('fetched_at', { ascending: false }).limit(1)).catch(() => []),
       q(sb.from('gvg_dh_scores').select('week,name,score').in('week', [weekKey(0), weekKey(-1)])).catch(() => null),
+      q(sb.from('gvg_war').select('name,guild,power,score').eq('week', weekKey(0))).catch(() => null),
     ]);
-    S.settings = settings; S.latest = new Map((latest || []).map((r) => [r.guild, r])); S.homeHist = homeHist || []; S.runs = runs || []; S.pending = (reqs && reqs[0] && reqs[0].requested_at) || null; S.server = (srv && srv[0]) || null; S.dhReady = Array.isArray(dh); S.dh = { cur: new Map((dh || []).filter((r) => r.week === weekKey(0)).map((r) => [r.name, Number(r.score)])), prev: new Map((dh || []).filter((r) => r.week === weekKey(-1)).map((r) => [r.name, Number(r.score)])) }; S.error = null;
+    S.settings = settings; S.latest = new Map((latest || []).map((r) => [r.guild, r])); S.homeHist = homeHist || []; S.runs = runs || []; S.pending = (reqs && reqs[0] && reqs[0].requested_at) || null; S.server = (srv && srv[0]) || null; S.dhReady = Array.isArray(dh); S.dh = { cur: new Map((dh || []).filter((r) => r.week === weekKey(0)).map((r) => [r.name, Number(r.score)])), prev: new Map((dh || []).filter((r) => r.week === weekKey(-1)).map((r) => [r.name, Number(r.score)])) }; S.warReady = Array.isArray(war); S.war = (war || []).map((r) => ({ name: r.name, guild: r.guild, power: r.power == null ? null : Number(r.power), score: r.score == null ? null : Number(r.score) })); S.error = null;
   } catch (e) { S.error = e; }
   render();
 }
 let reloadT; const reloadSoon = () => { clearTimeout(reloadT); reloadT = setTimeout(load, 600); };
-if (sb) { try { sb.channel('gvg').on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_snapshots' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_settings' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_requests' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_runs' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_server' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_dh_scores' }, reloadSoon).subscribe(); } catch (e) {} }
+if (sb) { try { sb.channel('gvg').on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_snapshots' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_settings' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_requests' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_runs' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_server' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_dh_scores' }, reloadSoon).on('postgres_changes', { event: '*', schema: 'public', table: 'gvg_war' }, reloadSoon).subscribe(); } catch (e) {} }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) reloadSoon(); });
 
 /* ── edit code ── */
@@ -855,6 +891,118 @@ function tbBracket(gb) {
   }
   return null; // 5,000위 밖
 }
+function warGuildColor(g) { const i = (S.settings?.lineup || []).indexOf(g); return i >= 0 ? GCOLORS[i % 5] : 'var(--mute)'; }
+function computeWar() {
+  const rows = S.war; if (!rows || !rows.length) return null;
+  const scored = rows.filter((r) => r.score != null && isFinite(r.score));
+  const estOf = (power) => {
+    if (!scored.length) return null;
+    const pw = power || 0, k = Math.min(5, scored.length);
+    const near = [...scored].sort((a, b) => Math.abs((a.power || 0) - pw) - Math.abs((b.power || 0) - pw)).slice(0, k);
+    return Math.round(near.reduce((s, x) => s + x.score, 0) / near.length);
+  };
+  const table = S.settings?.score_table || [];
+  const people = rows.map((r) => ({ ...r, est: r.score == null, eff: r.score != null ? r.score : estOf(r.power) }));
+  people.sort((a, b) => (b.eff || 0) - (a.eff || 0) || (b.power || 0) - (a.power || 0));
+  people.forEach((p, i) => { p.rank = i + 1; p.pts = table.length ? table[Math.min(p.rank, table.length) - 1] : 0; });
+  const gm = new Map();
+  people.forEach((p) => { const g = gm.get(p.guild) || { name: p.guild, color: warGuildColor(p.guild), cnt: 0, pts: 0, real: 0, est: 0, best: null, top: null };
+    g.cnt++; g.pts += p.pts; p.est ? g.est++ : g.real++; if (!g.top || p.eff > g.top.eff) g.top = p; if (g.best == null) g.best = p.rank; gm.set(p.guild, g); });
+  const guilds = [...gm.values()].sort((a, b) => b.pts - a.pts); guilds.forEach((g, i) => { g.place = i + 1; });
+  return { people, guilds, scored: scored.length, total: rows.length, week: weekKey(0) };
+}
+
+function renderWar() {
+  const W = computeWar();
+  if (!W) {
+    $('warKpis').innerHTML = ''; $('warSub').textContent = ''; $('warFocus').innerHTML = ''; $('warFocusSub').textContent = '';
+    $('warBoard').innerHTML = `<li style="display:block;padding:0"><div class="empty"><b>${S.warReady === false ? '대항전 실제 점수 저장 공간이 아직 준비되지 않았습니다' : '아직 올라온 대항전 점수가 없습니다'}</b>${S.warReady === false ? '관리자 설정(gvg_update5.sql) 실행이 필요해요.' : '위 <b>입력 양식 받기</b>로 양식을 받아 점수를 적고 <b>엑셀 업로드</b> 하세요.'}</div></li>`;
+    $('warTbl').innerHTML = ''; $('warNote').textContent = ''; return;
+  }
+  window.__warComputed = W;
+  const me = W.guilds.find((g) => g.name === HOME), top = W.guilds[0];
+  $('warSub').innerHTML = `${weekLabel(W.week)} · 실제 ${W.scored}명 · 예상 ${W.total - W.scored}명`;
+  // KPIs
+  const above = me && W.guilds[me.place - 2];
+  $('warKpis').innerHTML = `
+    <div class="kpi"><dt>안전 실제 순위</dt><dd class="num">${me ? me.place + '위' : '–'}</dd><small>${me ? `${W.guilds.length}개 길드 중` : ''}</small></div>
+    <div class="kpi"><dt>안전 환산 점수 합계</dt><dd class="num">${me ? fmtPts(me.pts) : '–'}</dd><small>${me && above ? `${above.place}위 ${esc(above.name)}까지 ${fmtPts(above.pts - me.pts)}점` : me && me.place === 1 ? '1위' : ''}</small></div>
+    <div class="kpi"><dt>입력 현황</dt><dd class="num">${W.scored} / ${W.total}명</dd><small>나머지는 전투력 기반 예상</small></div>
+    <div class="kpi"><dt>1위 길드</dt><dd class="num" style="font-size:19px">${esc(top?.name || '–')}</dd><small>${top ? fmtPts(top.pts) + '점' : ''}</small></div>`;
+  // board (guild standings)
+  const max = Math.max(1, ...W.guilds.map((g) => g.pts));
+  $('warBoard').innerHTML = W.guilds.map((g) => `<li class="${g.name === HOME ? 'me' : ''}">
+    <div class="rk num">${g.place}</div>
+    <div class="who"><div class="nm"><i style="width:10px;height:10px;border-radius:3px;background:${g.color};flex:none"></i><span class="t">${esc(g.name)}</span>${g.name === HOME ? '<span class="badge new">우리</span>' : ''}${g.est ? `<span class="badge warn">예상 ${g.est}명</span>` : ''}</div>
+      <div class="meta">${g.cnt}명 · 실제 ${g.real} · 예상 ${g.est} · 최고 ${g.best}등</div>
+      <div class="bar"><b style="width:${(g.pts / max * 100).toFixed(1)}%;background:${g.color}"></b></div></div>
+    <div class="sc"><strong class="num">${fmtPts(g.pts)}</strong><small class="num">${g === top ? (W.guilds[1] ? '+' + fmtPts(g.pts - W.guilds[1].pts) : '') : '−' + fmtPts(top.pts - g.pts)}</small></div></li>`).join('');
+  // focus (안전)
+  if (!me) { $('warFocus').innerHTML = '<div class="empty" style="padding:20px 0"><b>안전 데이터 없음</b></div>'; $('warFocusSub').textContent = ''; }
+  else {
+    const mine = W.people.filter((p) => p.guild === HOME);
+    const t10 = mine.filter((p) => p.rank <= 10).length, t30 = mine.filter((p) => p.rank <= 30).length;
+    $('warFocusSub').textContent = `${me.cnt}명 · 실제 ${me.real} · 예상 ${me.est}`;
+    $('warFocus').innerHTML = `
+      <div class="mute" style="font-size:12.5px">실제 순위</div>
+      <div class="big"><b class="num" style="color:${me.place === 1 ? 'var(--gold)' : 'var(--ink)'}">${me.place}</b><span>위 / ${W.guilds.length}</span></div>
+      <p class="ink2" style="margin:10px 0 0;font-size:13.5px">${me.place === 1 ? (W.guilds[1] ? `2위 <b>${esc(W.guilds[1].name)}</b>보다 <b class="num">${fmtPts(me.pts - W.guilds[1].pts)}점</b> 앞서 있습니다.` : '') : `${me.place - 1}위 <b>${esc(above.name)}</b>까지 <b class="num">${fmtPts(above.pts - me.pts)}점</b> 남았습니다.`}</p>
+      <dl class="kv">
+        <div><dt>환산 점수 합계</dt><dd class="num">${fmtPts(me.pts)}</dd></div>
+        <div><dt>대항전 점수 합계</dt><dd class="num">${fmtEok(mine.reduce((s, p) => s + (p.eff || 0), 0))}</dd></div>
+        <div><dt>상위 10등 / 30등</dt><dd class="num">${t10} / ${t30}명</dd></div>
+        <div><dt>최고 등수</dt><dd class="num">${me.best}등 · ${esc(me.top?.name || '')}</dd></div>
+      </dl>`;
+  }
+  // per-person table
+  const seg = [{ k: 'all', t: '전체', c: null }, ...W.guilds.map((g) => ({ k: g.name, t: g.name, c: g.color }))];
+  if (!seg.some((x) => x.k === S.warFilter)) S.warFilter = 'all';
+  $('warSeg').innerHTML = seg.map((x) => `<button type="button" data-wf="${esc(x.k)}" aria-pressed="${S.warFilter === x.k}">${x.c ? `<i style="background:${x.c}"></i>` : ''}${esc(x.t)}</button>`).join('');
+  $('warListSub').textContent = `${W.total}명`;
+  const qv = ($('warQ').value || '').trim().toLowerCase();
+  const gcol = new Map(W.guilds.map((g) => [g.name, g.color]));
+  const cols = [{ t: '순위', k: 'rank', v: (r) => -r.rank }, { t: '길드', k: 'guild', l: 1 }, { t: '닉네임', k: 'name', l: 1 }, { t: '전투력', k: 'power' }, { t: '대항전 점수', k: 'eff' }, { t: '환산점수', k: 'pts' }];
+  const rows = sortRows('war', W.people.filter((p) => (S.warFilter === 'all' || p.guild === S.warFilter) && (!qv || (p.name || '').toLowerCase().includes(qv))), cols, { k: 'rank', d: 'desc' });
+  $('warTbl').innerHTML = thead('war', cols, { k: 'rank', d: 'desc' }) + '<tbody>' + (rows.map((p) => `<tr class="${p.guild === HOME ? 'me' : ''}">
+    <td class="num"><span class="rankpill ${p.rank <= 10 ? 't10' : p.rank <= 30 ? 't30' : ''}">${p.rank}</span></td>
+    <td class="l"><span class="gname"><i style="background:${gcol.get(p.guild)}"></i>${esc(p.guild)}</span></td>
+    <td class="l nick"><a href="${charUrl(p.name)}" target="_blank" rel="noopener">${esc(p.name)}</a></td>
+    <td class="num ink2">${fmtJo(p.power)}</td>
+    <td class="num"><b>${fmtEok(p.eff)}</b> ${p.est ? '<span class="badge warn">예상</span>' : ''}</td>
+    <td class="num">${fmtPts(p.pts)}</td></tr>`).join('') || `<tr><td colspan="6" class="empty">표시할 길드원이 없습니다</td></tr>`) + '</tbody>';
+  $('warNote').innerHTML = `점수가 없는 사람은 <b>전투력이 가장 가까운 실제 입력자 5명의 평균</b>으로 예상치를 매겼습니다(표에 "예상" 표시). 전원을 대항전 점수로 줄 세워 순위별 환산점수(1위 150만…)를 매기고 길드별로 합산한 결과예요. 실제 점수는 <b>입력 양식 받기 → 엑셀 업로드</b>로 갱신하면 모두에게 바로 반영됩니다.`;
+}
+function downloadWarTemplate() {
+  if (!window.XLSX) { toast('엑셀 도구를 불러오지 못했습니다'); return; }
+  let base = (S.war && S.war.length) ? S.war.map((r) => [r.guild, r.name, r.power, r.score ?? '']) : [];
+  if (!base.length) { const lineup = (S.settings?.lineup || []); for (const g of lineup) { const snap = S.latest.get(g); (snap?.members || []).forEach((m) => base.push([g, m.n, m.bp, ''])); } }
+  base.sort((a, b) => (b[2] || 0) - (a[2] || 0));
+  const ws = XLSX.utils.aoa_to_sheet([['길드', '닉네임', '전투력(조)', '대항전점수(억)'], ...base]);
+  ws['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 18 }];
+  const guide = XLSX.utils.aoa_to_sheet([['작성 방법'], ['1. "대항전 점수" 시트의 D열에 각자 이번 주 대항전 점수를 적습니다.'], ['2. 억 단위 숫자(예: 12345) 또는 "1조 2345억"처럼 적어도 됩니다.'], ['3. 점수를 비워 두면 전투력이 비슷한 사람들의 점수로 "예상" 처리됩니다.'], ['4. 길드·닉네임·전투력 칸은 그대로 두세요(수정하면 그 값으로 저장돼요).'], ['5. 저장 후 실제 순위 탭 → 엑셀 업로드로 올립니다.'], [`대상 주간: ${weekLabel(weekKey(0))} (대항전 주차)`]]);
+  guide['!cols'] = [{ wch: 66 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '대항전 점수'); XLSX.utils.book_append_sheet(wb, guide, '작성 방법');
+  XLSX.writeFile(wb, `대항전_실제점수_양식_${weekKey(0)}.xlsx`);
+}
+function parsePowerJo(v) { const t = String(v ?? '').replace(/[,\s]/g, ''); if (!t) return null; if (/^\d+(\.\d+)?$/.test(t)) return Number(t); const m = t.match(/(?:(\d+)경)?(?:(\d+(?:\.\d+)?)조)?/); return (m && (m[1] || m[2])) ? Number(m[1] || 0) * 10000 + Number(m[2] || 0) : null; }
+async function uploadWar(file) {
+  if (!window.XLSX) { toast('엑셀 도구를 불러오지 못했습니다'); return; }
+  let aoa;
+  try { const wb = XLSX.read(await file.arrayBuffer()); const ws = wb.Sheets[wb.SheetNames.includes('대항전 점수') ? '대항전 점수' : wb.SheetNames[0]]; aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' }); }
+  catch (e) { toast('엑셀 파일을 읽지 못했습니다'); return; }
+  const hi = aoa.findIndex((r) => r.some((c) => /닉네임|캐릭터/.test(String(c))));
+  if (hi < 0) { toast('"닉네임" 열을 찾지 못했습니다. 양식을 받아 작성해 주세요'); return; }
+  const head = aoa[hi].map(String);
+  const ni = head.findIndex((c) => /닉네임|캐릭터/.test(c)), gi = head.findIndex((c) => /길드/.test(c)), pi = head.findIndex((c) => /전투력/.test(c)), si = head.findIndex((c) => /대항|점수/.test(c) && !/닉네임|길드|전투력/.test(c));
+  const rows = [], bad = [];
+  aoa.slice(hi + 1).forEach((r) => { const n = String(r[ni] || '').trim(); if (!n) return; const raw = si >= 0 ? String(r[si] ?? '').trim() : ''; let score = null; if (raw) { const v = parseEok(raw); if (Number.isNaN(v)) { bad.push(n); } else score = v; } rows.push({ name: n, guild: gi >= 0 ? String(r[gi] || '').trim() : '', power: pi >= 0 ? parsePowerJo(r[pi]) : null, score }); });
+  if (!rows.length) { toast('올릴 데이터가 없습니다'); return; }
+  if (window.__GVG_MOCK) { S.war = rows; S.warReady = true; render(); toast(`${rows.length}명 반영(미리보기)`); return; }
+  const { error } = await sb.rpc('gvg_war_bulk', { p_week: weekKey(0), p_rows: rows });
+  if (error) { toast('업로드하지 못했습니다: ' + error.message); return; }
+  toast(`${rows.length}명 저장했습니다${bad.length ? ` · 숫자 오류 ${bad.length}건은 비움` : ''}`); load();
+}
+
 function computeServer() {
   const sv = S.server; if (!sv) return null;
   const names = [...new Set([HOME, ...(sv.guilds || [])])];
@@ -901,7 +1049,7 @@ function render() {
   renderStatus();
   if (S.error) { renderError(); return; }
   const C = compute(); window.__gvgComputed = C;
-  renderBoard(C); renderFocus(C); renderTiers(C); renderGuildTbl(C); renderRoster(C); renderAll(C); renderServer(C); renderAdmin(C);
+  renderBoard(C); renderFocus(C); renderTiers(C); renderGuildTbl(C); renderRoster(C); renderAll(C); renderWar(); renderServer(C); renderAdmin(C);
 }
 
 function renderRefresh() {
@@ -1164,6 +1312,10 @@ function renderAll(C) {
 }
 $('allSeg').addEventListener('click', (e) => { const b = e.target.closest('button[data-f]'); if (!b) return; S.filter = b.dataset.f; render(); });
 $('allQ').addEventListener('input', () => render());
+$('warSeg').addEventListener('click', (e) => { const b = e.target.closest('button[data-wf]'); if (!b) return; S.warFilter = b.dataset.wf; render(); });
+$('warQ').addEventListener('input', () => render());
+$('warTplBtn').addEventListener('click', downloadWarTemplate);
+$('warFile').addEventListener('change', async (e) => { const f = e.target.files[0]; if (f) await uploadWar(f); e.target.value = ''; });
 $('rosterQ').addEventListener('input', () => render());
 $('rosterTbl').addEventListener('keydown', (e) => { const i = e.target.closest('.dh-in'); if (!i) return; if (e.key === 'Enter') { e.preventDefault(); i.blur(); } if (e.key === 'Escape') { i.value = S.dh.cur.has(i.dataset.n) ? fmtEok(S.dh.cur.get(i.dataset.n)) : ''; i.blur(); } });
 $('rosterTbl').addEventListener('focusout', (e) => { const i = e.target.closest('.dh-in'); if (!i) return; setTimeout(() => { saveDh(i.dataset.n, i.value, i); if (S._pendingRender) { S._pendingRender = false; render(); } }, 0); });
@@ -1228,7 +1380,7 @@ function showTab(name) {
 }
 document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => showTab(t.dataset.tab)));
 document.querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => { showTab(b.dataset.goto); const f = b.dataset.focus && $(b.dataset.focus); if (f) setTimeout(() => f.focus(), 50); }));
-const h0 = location.hash.slice(1); if (['gvg', 'roster', 'all', 'server', 'content', 'boss', 'admin'].includes(h0)) showTab(h0);
+const h0 = location.hash.slice(1); if (['gvg', 'roster', 'all', 'war', 'server', 'content', 'boss', 'admin'].includes(h0)) showTab(h0);
 
 setInterval(() => { if (!document.hidden) renderStatus(); }, 60000);
 load();
